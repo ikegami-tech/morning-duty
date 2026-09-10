@@ -4,20 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>朝礼当番表</title>
+
+  <!-- ファビコン設定 -->
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="favicon.png">
+
   <style>
     :root {
       --primary: #0052cc;
+      --primary-hover: #0065ff;
       --bg: #f4f5f7;
       --card: #ffffff;
       --border: #dfe1e6;
       --danger: #de350b;
+      --text: #172b4d;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg);
       margin: 0;
       padding: 20px;
-      color: #172b4d;
+      color: var(--text);
     }
     .container {
       max-width: 1000px;
@@ -26,16 +33,26 @@
     h1 {
       color: var(--primary);
       text-align: center;
+      margin-bottom: 20px;
     }
     .info-card {
       background: #deebff;
       border-left: 4px solid var(--primary);
-      padding: 15px;
+      padding: 15px 20px;
       margin-bottom: 20px;
       border-radius: 4px;
     }
-    .info-card h3 { margin-top: 0; color: var(--primary); }
-    
+    .info-card h3 {
+      margin: 0 0 8px 0;
+      color: var(--primary);
+      font-size: 18px;
+    }
+    .info-card p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
     .add-form {
       background: var(--card);
       padding: 15px;
@@ -47,7 +64,7 @@
     }
     .add-form input {
       flex: 1;
-      padding: 10px;
+      padding: 10px 12px;
       border: 1px solid var(--border);
       border-radius: 4px;
       font-size: 16px;
@@ -60,9 +77,13 @@
       border-radius: 4px;
       cursor: pointer;
       font-weight: bold;
+      font-size: 14px;
+      transition: background-color 0.2s;
     }
-    button:hover { opacity: 0.9; }
-    
+    button:hover {
+      background: var(--primary-hover);
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -77,25 +98,35 @@
       border-bottom: 1px solid var(--border);
     }
     th {
-      background-color: #f4f5f7;
+      background-color: #fafbfc;
       color: #5e6c84;
+      font-weight: 600;
     }
     td input[type="text"] {
       width: 70px;
       text-align: center;
-      padding: 5px;
+      padding: 6px;
       border: 1px solid var(--border);
       border-radius: 4px;
+      font-size: 14px;
+    }
+    td input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary);
     }
     .btn-delete {
       background: var(--danger);
-      padding: 5px 10px;
+      padding: 6px 12px;
       font-size: 12px;
+    }
+    .btn-delete:hover {
+      background: #ff5630;
     }
     .loading {
       text-align: center;
-      padding: 20px;
+      padding: 30px;
       font-size: 18px;
+      color: #5e6c84;
     }
   </style>
 </head>
@@ -115,8 +146,10 @@
     <button onclick="handleAddMember()">メンバー追加</button>
   </div>
 
-  <!-- メンバーテーブル -->
+  <!-- データ読み込み中表示 -->
   <div id="loading" class="loading">データを読み込み中...</div>
+
+  <!-- メンバーテーブル -->
   <table id="dutyTable" style="display:none;">
     <thead>
       <tr>
@@ -148,7 +181,7 @@
       const members = await res.json();
       renderTable(members);
     } catch (err) {
-      alert('データの取得に失敗しました。');
+      alert('データの取得に失敗しました。API URLを確認してください。');
       console.error(err);
     } finally {
       document.getElementById('loading').style.display = 'none';
@@ -156,31 +189,31 @@
     }
   }
 
-  // テーブルのHTML生成
+  // テーブルのHTML動的生成
   function renderTable(members) {
     const tbody = document.getElementById('memberList');
     tbody.innerHTML = '';
 
-    // order_no順にソート
-    members.sort((a, b) => a.order_no - b.order_no);
+    // order_no順に並び替え
+    members.sort((a, b) => Number(a.order_no) - Number(b.order_no));
 
     members.forEach((m) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${m.order_no}</td>
-        <td><strong>${m.name}</strong></td>
-        <td><input type="text" value="${m.date_1 || ''}" onchange="handleUpdateDate(${m.id}, 1, this.value)"></td>
-        <td><input type="text" value="${m.date_2 || ''}" onchange="handleUpdateDate(${m.id}, 2, this.value)"></td>
-        <td><input type="text" value="${m.date_3 || ''}" onchange="handleUpdateDate(${m.id}, 3, this.value)"></td>
-        <td><input type="text" value="${m.date_4 || ''}" onchange="handleUpdateDate(${m.id}, 4, this.value)"></td>
-        <td><input type="text" value="${m.date_5 || ''}" onchange="handleUpdateDate(${m.id}, 5, this.value)"></td>
-        <td><button class="btn-delete" onclick="handleDeleteMember(${m.id}, '${m.name}')">削除</button></td>
+        <td><strong>${escapeHtml(m.name)}</strong></td>
+        <td><input type="text" value="${escapeHtml(m.date_1 || '')}" onchange="handleUpdateDate(${m.id}, 1, this.value)"></td>
+        <td><input type="text" value="${escapeHtml(m.date_2 || '')}" onchange="handleUpdateDate(${m.id}, 2, this.value)"></td>
+        <td><input type="text" value="${escapeHtml(m.date_3 || '')}" onchange="handleUpdateDate(${m.id}, 3, this.value)"></td>
+        <td><input type="text" value="${escapeHtml(m.date_4 || '')}" onchange="handleUpdateDate(${m.id}, 4, this.value)"></td>
+        <td><input type="text" value="${escapeHtml(m.date_5 || '')}" onchange="handleUpdateDate(${m.id}, 5, this.value)"></td>
+        <td><button class="btn-delete" onclick="handleDeleteMember(${m.id}, '${escapeJs(m.name)}')">削除</button></td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  // 追加処理
+  // メンバー追加処理
   async function handleAddMember() {
     const input = document.getElementById('newMemberName');
     const name = input.value.trim();
@@ -197,7 +230,7 @@
     }
   }
 
-  // 削除処理（論理削除）
+  // メンバー削除（論理削除）処理
   async function handleDeleteMember(id, name) {
     if (confirm(`${name} さんを削除しますか？`)) {
       await fetch(API_URL, {
@@ -223,8 +256,24 @@
     });
   }
 
-  // 初回実行
+  // エスケープ処理（安全策）
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+  function escapeJs(str) {
+    if (!str) return '';
+    return String(str).replace(/'/g, "\\'");
+  }
+
+  // ページ読み込み時にデータ取得
   fetchMembers();
 </script>
+
 </body>
 </html>

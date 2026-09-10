@@ -11,209 +11,306 @@
 
   <style>
     :root {
-      --primary: #0052cc;
-      --primary-hover: #0065ff;
-      --bg: #f4f5f7;
-      --card: #ffffff;
-      --border: #dfe1e6;
-      --danger: #de350b;
-      --text: #172b4d;
+      --primary-blue: #002B66;
+      --bg-color: #ffffff;
+      --border-color: #cccccc;
+      --danger-red: #cc0000;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg);
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", MeiRyo, sans-serif;
       margin: 0;
-      padding: 20px;
-      color: var(--text);
+      padding: 10px;
+      background-color: #f9f9f9;
+      color: #333;
     }
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-    h1 {
-      color: var(--primary);
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .info-card {
-      background: #deebff;
-      border-left: 4px solid var(--primary);
-      padding: 15px 20px;
-      margin-bottom: 20px;
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      background-color: #fff;
+      border: 1px solid var(--border-color);
       border-radius: 4px;
     }
-    .info-card h3 {
-      margin: 0 0 8px 0;
-      color: var(--primary);
-      font-size: 18px;
-    }
-    .info-card p {
+
+    .header-bar h1 {
       margin: 0;
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: 20px;
+      color: var(--primary-blue);
     }
 
     .add-form {
-      background: var(--card);
-      padding: 15px;
-      border-radius: 8px;
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      gap: 8px;
     }
+
     .add-form input {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
       border-radius: 4px;
-      font-size: 16px;
+      font-size: 14px;
+      width: 180px;
     }
-    button {
-      background: var(--primary);
+
+    .add-form button {
+      background-color: var(--primary-blue);
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 6px 12px;
       border-radius: 4px;
       cursor: pointer;
       font-weight: bold;
-      font-size: 14px;
-      transition: background-color 0.2s;
+      font-size: 13px;
     }
-    button:hover {
-      background: var(--primary-hover);
+
+    .add-form button:hover {
+      opacity: 0.9;
+    }
+
+    /* 左右2列レイアウト */
+    .tables-container {
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+    }
+
+    .table-wrapper {
+      flex: 1;
+      background: #fff;
+      border: 1px solid var(--border-color);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      background: var(--card);
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-size: 13px;
     }
+
     th, td {
-      padding: 12px;
+      border: 1px solid var(--border-color);
+      padding: 4px 6px;
       text-align: center;
-      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
     }
+
     th {
-      background-color: #fafbfc;
-      color: #5e6c84;
-      font-weight: 600;
-    }
-    td input[type="text"] {
-      width: 70px;
-      text-align: center;
+      background-color: var(--primary-blue);
+      color: white;
+      font-weight: normal;
       padding: 6px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-size: 14px;
     }
+
+    .th-no { width: 35px; }
+    .th-name { width: 110px; }
+    .th-date { width: 55px; }
+    .th-op { width: 45px; }
+
+    td input[type="text"] {
+      width: 100%;
+      text-align: center;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      padding: 2px 0;
+    }
+
     td input[type="text"]:focus {
-      outline: none;
-      border-color: var(--primary);
+      outline: 2px solid var(--primary-blue);
+      background: #eef5ff;
     }
+
     .btn-delete {
-      background: var(--danger);
-      padding: 6px 12px;
-      font-size: 12px;
+      background-color: transparent;
+      color: var(--danger-red);
+      border: 1px solid var(--danger-red);
+      border-radius: 3px;
+      padding: 2px 5px;
+      font-size: 11px;
+      cursor: pointer;
     }
+
     .btn-delete:hover {
-      background: #ff5630;
+      background-color: var(--danger-red);
+      color: white;
     }
+
+    /* 下部フッター表示 */
+    .bottom-info {
+      margin-top: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-blue-bar {
+      background-color: var(--primary-blue);
+      height: 25px;
+      width: 100%;
+    }
+
+    .notes-box {
+      color: #000;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 5px 0;
+    }
+
+    .notes-box .red-text {
+      color: red;
+      font-weight: bold;
+    }
+
+    .notes-box .blue-text {
+      color: blue;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
     .loading {
       text-align: center;
-      padding: 30px;
-      font-size: 18px;
-      color: #5e6c84;
+      padding: 40px;
+      font-size: 16px;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .tables-container {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>朝礼当番表</h1>
-
-  <div class="info-card">
-    <h3>朝礼時のひとこと（2〜3分目安）</h3>
-    <p>単なる情報共有ではなく、近々の自分のまとめ今思っていること・成功体験・失敗体験等を仕事にどう活かすかの共有</p>
+  <!-- ヘッダー（タイトル＆追加フォーム） -->
+  <div class="header-bar">
+    <h1>朝礼当番表</h1>
+    <div class="add-form">
+      <input type="text" id="newMemberName" placeholder="新しい人の名前">
+      <button onclick="handleAddMember()">追加</button>
+    </div>
   </div>
 
-  <!-- メンバー追加フォーム -->
-  <div class="add-form">
-    <input type="text" id="newMemberName" placeholder="新しいメンバーの名前を入力">
-    <button onclick="handleAddMember()">メンバー追加</button>
-  </div>
-
-  <!-- データ読み込み中表示 -->
   <div id="loading" class="loading">データを読み込み中...</div>
 
-  <!-- メンバーテーブル -->
-  <table id="dutyTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>No.</th>
-        <th>氏名</th>
-        <th>日付1</th>
-        <th>日付2</th>
-        <th>日付3</th>
-        <th>日付4</th>
-        <th>日付5</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody id="memberList"></tbody>
-  </table>
-</div>
+  <!-- 2列のテーブル表示エリア -->
+  <div id="tablesContainer" class="tables-container" style="display: none;">
+    <!-- 左側（前半） -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th class="th-no">No.</th>
+            <th class="th-name">氏名</th>
+            <th class="th-date">日付1</th>
+            <th class="th-date">日付2</th>
+            <th class="th-date">日付3</th>
+            <th class="th-date">日付4</th>
+            <th class="th-date">日付5</th>
+            <th class="th-op">削除</th>
+          </tr>
+        </thead>
+        <tbody id="leftTbody"></tbody>
+      </table>
+    </div>
+
+    <!-- 右側（後半） -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th class="th-no">No.</th>
+            <th class="th-name">氏名</th>
+            <th class="th-date">日付1</th>
+            <th class="th-date">日付2</th>
+            <th class="th-date">日付3</th>
+            <th class="th-date">日付4</th>
+            <th class="th-date">日付5</th>
+            <th class="th-op">削除</th>
+          </tr>
+        </thead>
+        <tbody id="rightTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 最下部フッター（注意事項等） -->
+  <div class="bottom-info">
+    <div class="footer-blue-bar"></div>
+    <div class="notes-box">
+      <p class="red-text" style="margin: 0 0 10px 0;">自分が終わったら日付入力</p>
+      <p class="blue-text" style="margin: 0 0 5px 0;">朝礼時のひとこと（2〜3分目安）</p>
+      <p style="margin: 0;">単なる情報共有ではなく</p>
+      <p style="margin: 0;">一言の内容：近々の自分のまとめ今思っていること</p>
+      <p style="margin: 0;">成功体験・失敗体験 等を仕事にどう活かすかの共有</p>
+    </div>
+  </div>
 
 <script>
   // ★ご自身のGASウェブアプリURLに置き換えてください
-  const API_URL = 'https://script.google.com/macros/s/AKfycbysSE3uM3ctMAESaMYdkUUTTkUGucVi1nYHpNfAN7O7-5D5itTkDPU32dsn_431wgAL/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbye5nFqxQukA-SDO7XHzExAMfpQOGU0pP4Ix-b0VEZsdke5UprPsFPcbRrfmImUbCCM/exec';
 
-  // メンバーデータ取得＆描画
+  // データ取得＆2列に振分けて描画
   async function fetchMembers() {
     document.getElementById('loading').style.display = 'block';
-    document.getElementById('dutyTable').style.display = 'none';
+    document.getElementById('tablesContainer').style.display = 'none';
 
     try {
       const res = await fetch(API_URL);
       const members = await res.json();
-      renderTable(members);
+      renderTables(members);
     } catch (err) {
-      alert('データの取得に失敗しました。API URLを確認してください。');
+      alert('データの取得に失敗しました。');
       console.error(err);
     } finally {
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('dutyTable').style.display = 'table';
+      document.getElementById('tablesContainer').style.display = 'flex';
     }
   }
 
-  // テーブルのHTML動的生成
-  function renderTable(members) {
-    const tbody = document.getElementById('memberList');
-    tbody.innerHTML = '';
+  // 左右テーブルへのレンダリング
+  function renderTables(members) {
+    const leftTbody = document.getElementById('leftTbody');
+    const rightTbody = document.getElementById('rightTbody');
+    leftTbody.innerHTML = '';
+    rightTbody.innerHTML = '';
 
     // order_no順に並び替え
     members.sort((a, b) => Number(a.order_no) - Number(b.order_no));
 
-    members.forEach((m) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${m.order_no}</td>
-        <td><strong>${escapeHtml(m.name)}</strong></td>
-        <td><input type="text" value="${escapeHtml(m.date_1 || '')}" onchange="handleUpdateDate(${m.id}, 1, this.value)"></td>
-        <td><input type="text" value="${escapeHtml(m.date_2 || '')}" onchange="handleUpdateDate(${m.id}, 2, this.value)"></td>
-        <td><input type="text" value="${escapeHtml(m.date_3 || '')}" onchange="handleUpdateDate(${m.id}, 3, this.value)"></td>
-        <td><input type="text" value="${escapeHtml(m.date_4 || '')}" onchange="handleUpdateDate(${m.id}, 4, this.value)"></td>
-        <td><input type="text" value="${escapeHtml(m.date_5 || '')}" onchange="handleUpdateDate(${m.id}, 5, this.value)"></td>
-        <td><button class="btn-delete" onclick="handleDeleteMember(${m.id}, '${escapeJs(m.name)}')">削除</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
+    // 全体の半分で左右に分割
+    const half = Math.ceil(members.length / 2);
+    const leftMembers = members.slice(0, half);
+    const rightMembers = members.slice(half);
+
+    leftMembers.forEach(m => leftTbody.appendChild(createRow(m)));
+    rightMembers.forEach(m => rightTbody.appendChild(createRow(m)));
   }
 
-  // メンバー追加処理
+  // 行（tr）作成処理
+  function createRow(m) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${m.order_no}</td>
+      <td style="text-align: left; padding-left: 8px;"><strong>${escapeHtml(m.name)}</strong></td>
+      <td><input type="text" value="${escapeHtml(m.date_1 || '')}" onchange="handleUpdateDate(${m.id}, 1, this.value)"></td>
+      <td><input type="text" value="${escapeHtml(m.date_2 || '')}" onchange="handleUpdateDate(${m.id}, 2, this.value)"></td>
+      <td><input type="text" value="${escapeHtml(m.date_3 || '')}" onchange="handleUpdateDate(${m.id}, 3, this.value)"></td>
+      <td><input type="text" value="${escapeHtml(m.date_4 || '')}" onchange="handleUpdateDate(${m.id}, 4, this.value)"></td>
+      <td><input type="text" value="${escapeHtml(m.date_5 || '')}" onchange="handleUpdateDate(${m.id}, 5, this.value)"></td>
+      <td><button class="btn-delete" onclick="handleDeleteMember(${m.id}, '${escapeJs(m.name)}')">✕</button></td>
+    `;
+    return tr;
+  }
+
+  // 追加処理
   async function handleAddMember() {
     const input = document.getElementById('newMemberName');
     const name = input.value.trim();
@@ -230,7 +327,7 @@
     }
   }
 
-  // メンバー削除（論理削除）処理
+  // 削除処理
   async function handleDeleteMember(id, name) {
     if (confirm(`${name} さんを削除しますか？`)) {
       await fetch(API_URL, {
@@ -256,24 +353,18 @@
     });
   }
 
-  // エスケープ処理（安全策）
+  // エスケープ関数
   function escapeHtml(str) {
     if (!str) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
   function escapeJs(str) {
     if (!str) return '';
     return String(str).replace(/'/g, "\\'");
   }
 
-  // ページ読み込み時にデータ取得
+  // 初回読み込み
   fetchMembers();
 </script>
-
 </body>
 </html>

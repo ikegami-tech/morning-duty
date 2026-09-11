@@ -285,7 +285,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbw0ifIRupGsR6oHiN7yd88btPRVp9_H0qCvET8jcFqi2PCAGFJ_SjCfs6epm-4IuvI/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzoFDSa3vZRPJLGxCTv5IO8TRf_cY8HOQdRkpjkXl4-P8d9s9Xl_wyojPP4CeJ95-AQfA/exec";
     let globalData = null;
     let pendingUndoPayload = null;
 
@@ -422,6 +422,7 @@
       box.innerHTML = "";
     }
 
+    // 手動プラス実行時の処理（通知バー & Undoボタン対応）
     async function submitCustomDuty(no, name) {
       const dateVal = document.getElementById('customDutyDate').value;
       if (!dateVal) {
@@ -429,12 +430,19 @@
         return;
       }
       closeDatePicker();
-      await sendPost({ action: 'complete', targetNo: no, customDate: dateVal });
+      const res = await sendPost({ action: 'complete', targetNo: no, customDate: dateVal });
+      if (res && res.success) {
+        showUndoBar(`${name} さんの完了（${dateVal}）を記録しました`, { action: 'undo', undoType: 'complete', targetNo: no });
+      }
     }
 
+    // 手動マイナス実行時の処理（通知バー & Undoボタン対応）
     async function decrementDuty(no, name) {
       if (!confirm(`${name} さんの直近の朝礼完了を取り消し（マイナス）しますか？`)) return;
-      await sendPost({ action: 'decrement', targetNo: no });
+      const res = await sendPost({ action: 'decrement', targetNo: no });
+      if (res && res.success) {
+        showUndoBar(`${name} さんの回数を1回減らしました`, { action: 'complete', targetNo: no });
+      }
     }
 
     function filterMemberList() {
@@ -532,9 +540,6 @@
         });
 
         const result = await response.json();
-        if (payload.action === 'undo') {
-          alert(result.message);
-        }
         fetchDutyData();
         return result;
 

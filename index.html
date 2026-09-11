@@ -252,8 +252,7 @@
   </div>
 
   <script>
-    // GAS WebアプリのURL
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwchCtnSWWbrav3l8PViZP5KRWfqltyRhSwbK86h_N3bUZcybAaEvNtGjauN-nN_1Y/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwDRDKIoYHzXzUfwZfEWDsbN5aOC7va0eTq0geVsBD7uSEN8gWzF5fE7jQf6yVfZ6c/exec";
 
     async function fetchDutyData() {
       try {
@@ -263,6 +262,8 @@
       } catch (error) {
         document.getElementById('app').innerHTML = '<div class="loading">データの取得に失敗しました</div>';
         console.error(error);
+      } finally {
+        setButtonsDisabled(false);
       }
     }
 
@@ -324,6 +325,11 @@
       app.innerHTML = html;
     }
 
+    function setButtonsDisabled(disabled) {
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(b => b.disabled = disabled);
+    }
+
     // 本日の朝礼完了ボタン処理
     async function submitDuty(no, name) {
       if (!confirm(`${name} さんの朝礼完了を記録しますか？\n（スプレッドシートに今日の日付が入力されます）`)) return;
@@ -352,8 +358,7 @@
 
     // POST送信共通関数
     async function sendPost(payload) {
-      const buttons = document.querySelectorAll('button');
-      buttons.forEach(b => b.disabled = true);
+      setButtonsDisabled(true);
 
       try {
         const response = await fetch(GAS_URL, {
@@ -369,6 +374,8 @@
         alert("処理中にエラーが発生しました。");
         console.error(error);
         fetchDutyData();
+      } finally {
+        setButtonsDisabled(false);
       }
     }
 

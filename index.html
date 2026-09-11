@@ -17,6 +17,11 @@
       padding: 16px;
       color: #333;
     }
+    /* モーダル表示時に背景スクロールをロックするクラス */
+    body.modal-open {
+      overflow: hidden;
+    }
+
     .container {
       max-width: 500px;
       margin: 0 auto;
@@ -98,7 +103,6 @@
       box-shadow: 0 4px 12px rgba(0,123,255,0.3);
       margin-bottom: 24px;
     }
-    /* 本日の日付スタイル */
     .next-card .today-date {
       font-size: 0.85rem;
       background: rgba(255, 255, 255, 0.15);
@@ -202,6 +206,8 @@
       background: rgba(0, 0, 0, 0.4);
       display: flex; justify-content: center; align-items: center;
       z-index: 1000; padding: 16px; box-sizing: border-box;
+      /* 背景スクロール伝播を阻止 */
+      overscroll-behavior: contain;
     }
     .modal-content {
       background: white; width: 100%; max-width: 480px; max-height: 85vh;
@@ -212,7 +218,15 @@
     .modal-header h2 { font-size: 1.05rem; margin: 0; color: #333; }
     .close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; padding: 0; line-height: 1; }
     .close-btn:hover { color: #333; }
-    .modal-body { padding: 16px 20px; overflow-y: auto; }
+    
+    /* モーダル内部のスクロール制御 */
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      /* モーダル内スクロールが端に達しても背景にスクロールを伝播させない */
+      overscroll-behavior: contain;
+    }
+    
     .admin-card { background: #f8f9fa; padding: 14px 16px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e9ecef; }
     .admin-title { font-size: 0.85rem; font-weight: bold; color: #555; margin-bottom: 10px; }
     .add-form { display: flex; gap: 8px; }
@@ -223,7 +237,16 @@
     .search-container { margin-bottom: 10px; }
     .search-input { width: 100%; background: #fff; }
     .edit-list-title { font-size: 0.85rem; font-weight: bold; color: #555; margin-bottom: 8px; }
-    .edit-member-list { background: white; border: 1px solid #eee; border-radius: 8px; max-height: 240px; overflow-y: auto; }
+    
+    .edit-member-list {
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      /* リスト内スクロールの連鎖阻止 */
+      overscroll-behavior: contain;
+    }
     .edit-member-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #eee; }
     .edit-member-item:last-child { border-bottom: none; }
     
@@ -304,7 +327,6 @@
     let globalData = null;
     let pendingUndoPayload = null;
 
-    // 今日のおすすめ文字列フォーマット（例: 2026年9月11日(金)）
     function getTodayFormattedString() {
       const now = new Date();
       const year = now.getFullYear();
@@ -476,13 +498,18 @@
       if (globalData) renderEditList(globalData, keyword);
     }
 
+    /* モーダル表示時に背景スクロールを抑止 */
     function openSettingsModal() {
+      document.body.classList.add('modal-open');
       document.getElementById('settingsModal').style.display = 'flex';
       document.getElementById('searchMemberInput').value = '';
       closeDatePicker();
       if (globalData) renderEditList(globalData);
     }
+
+    /* モーダル閉じた際に背景スクロールを解除 */
     function closeSettingsModal() {
+      document.body.classList.remove('modal-open');
       document.getElementById('settingsModal').style.display = 'none';
       closeDatePicker();
     }

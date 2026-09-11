@@ -318,16 +318,24 @@
       display: flex;
       gap: 8px;
     }
-    .add-input {
+    .add-input, .search-input {
       flex: 1;
       padding: 8px 12px;
       border: 1px solid #ddd;
       border-radius: 8px;
       font-size: 0.9rem;
       outline: none;
+      box-sizing: border-box;
     }
-    .add-input:focus {
+    .add-input:focus, .search-input:focus {
       border-color: #007bff;
+    }
+    .search-container {
+      margin-bottom: 10px;
+    }
+    .search-input {
+      width: 100%;
+      background: #fff;
     }
     .edit-list-title {
       font-size: 0.85rem;
@@ -339,7 +347,7 @@
       background: white;
       border: 1px solid #eee;
       border-radius: 8px;
-      max-height: 250px;
+      max-height: 220px;
       overflow-y: auto;
     }
     .edit-member-item {
@@ -376,7 +384,7 @@
     </div>
   </div>
 
-  <!-- 設定モーダル（初期状態は非表示） -->
+  <!-- 設定モーダル -->
   <div id="settingsModal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <div class="modal-header">
@@ -393,8 +401,11 @@
           </div>
         </div>
 
-        <!-- メンバー削除一覧 -->
+        <!-- メンバー削除（検索＆一覧） -->
         <div class="edit-list-title">メンバーの削除</div>
+        <div class="search-container">
+          <input type="text" id="searchMemberInput" class="search-input" placeholder="🔍 名前で検索..." oninput="filterMemberList()">
+        </div>
         <div id="editMemberList" class="edit-member-list">
           <div class="loading">読み込み中...</div>
         </div>
@@ -421,7 +432,7 @@
       }
     }
 
-    // メイン画面描画（削除ボタンなし・すっきり表示）
+    // メイン画面描画
     function renderUI(data) {
       const app = document.getElementById('app');
       
@@ -479,16 +490,27 @@
       app.innerHTML = html;
     }
 
-    // 設定モーダル内の削除一覧描画（No順で表示）
-    function renderEditList(data) {
+    // 設定モーダル内の削除一覧描画（検索フィルター対応）
+    function renderEditList(data, filterKeyword = "") {
       const container = document.getElementById('editMemberList');
       if (!data || !data.list || data.list.length === 0) {
-        container.innerHTML = '<div style="padding:10px;text-align:center;color:#888;">メンバーはいません</div>';
+        container.innerHTML = '<div style="padding:12px;text-align:center;color:#888;">メンバーはいません</div>';
         return;
       }
 
-      // No順に並び替えて表示
-      const sortedList = [...data.list].sort((a, b) => a.no - b.no);
+      // No順にソート
+      let sortedList = [...data.list].sort((a, b) => a.no - b.no);
+
+      // 検索キーワードで絞り込み
+      if (filterKeyword.trim() !== "") {
+        const kw = filterKeyword.trim().toLowerCase();
+        sortedList = sortedList.filter(item => item.name.toLowerCase().includes(kw));
+      }
+
+      if (sortedList.length === 0) {
+        container.innerHTML = '<div style="padding:12px;text-align:center;color:#888;">該当するメンバーが見つかりません</div>';
+        return;
+      }
 
       let html = "";
       sortedList.forEach(item => {
@@ -505,9 +527,18 @@
       container.innerHTML = html;
     }
 
+    // 検索入力時のリアルタイムフィルター
+    function filterMemberList() {
+      const keyword = document.getElementById('searchMemberInput').value;
+      if (globalData) {
+        renderEditList(globalData, keyword);
+      }
+    }
+
     // モーダル開閉制御
     function openSettingsModal() {
       document.getElementById('settingsModal').style.display = 'flex';
+      document.getElementById('searchMemberInput').value = ''; // 検索窓クリア
       if (globalData) renderEditList(globalData);
     }
     function closeSettingsModal() {
@@ -519,7 +550,7 @@
       buttons.forEach(b => b.disabled = disabled);
     }
 
-    // 直前の操作の「取り消しボタン」を表示するバーの制御
+    // 取り消しバー制御
     function showUndoBar(text, payload) {
       const bar = document.getElementById('undoBar');
       bar.className = "undo-bar";

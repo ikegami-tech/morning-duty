@@ -27,6 +27,7 @@
       color: #555;
       margin: 0;
     }
+    /* スプレッドシートへのリンクボタン */
     .sheet-link {
       font-size: 0.8rem;
       color: #1d6f42;
@@ -42,7 +43,7 @@
       background-color: #ceead6;
     }
 
-    /* 管理フォーム（追加エリア） */
+    /* 管理フォーム（新規メンバー追加） */
     .admin-card {
       background: white;
       padding: 14px 16px;
@@ -72,7 +73,7 @@
       border-color: #007bff;
     }
 
-    /* 当番カード */
+    /* 当番強調表示カード */
     .next-card {
       background: linear-gradient(135deg, #007bff, #0056b3);
       color: white;
@@ -100,7 +101,7 @@
       margin-bottom: 16px;
     }
 
-    /* ボタン群 */
+    /* ボタン共通デザイン */
     .btn {
       background-color: #28a745;
       color: white;
@@ -231,12 +232,12 @@
   <div class="container">
     <div class="header">
       <h1>朝礼当番表</h1>
-      <a href="https://docs.google.com/spreadsheets/d/1Qvj8HQjpMhiWchgDxfXT_iwsbBGnJ5hO0ec_I5U4zd8/edit?gid=344554425#gid=344554425" target="_blank" rel="noopener noreferrer" class="sheet-link">
+      <a href="https://docs.google.com/spreadsheets/d/1V-gqaV6i0lAmZU1w_zAHZ0fzGd3etAbHGuGjxpr5SoE/edit?gid=870774158#gid=870774158" target="_blank" rel="noopener noreferrer" class="sheet-link">
         シートを開く 📊
       </a>
     </div>
 
-    <!-- メンバー追加入力エリア -->
+    <!-- メンバー追加フォーム -->
     <div class="admin-card">
       <div class="admin-title">新規メンバー追加</div>
       <div class="add-form">
@@ -251,7 +252,8 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzA1skT0uDR-7VC9ZIWvrGw2ahaUu7JBpYj7Yg1IN5StzcsvM4Q4uF7m3WD854JgeUVgg/exec";
+    // GAS WebアプリのURL
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwchCtnSWWbrav3l8PViZP5KRWfqltyRhSwbK86h_N3bUZcybAaEvNtGjauN-nN_1Y/exec";
 
     async function fetchDutyData() {
       try {
@@ -267,6 +269,11 @@
     function renderUI(data) {
       const app = document.getElementById('app');
       
+      if (!data.list || data.list.length === 0) {
+        app.innerHTML = '<div class="loading">メンバーが登録されていません</div>';
+        return;
+      }
+
       let html = `
         <div class="next-card">
           <div class="label">本日の予定当番</div>
@@ -317,7 +324,7 @@
       app.innerHTML = html;
     }
 
-    // 朝礼完了処理
+    // 本日の朝礼完了ボタン処理
     async function submitDuty(no, name) {
       if (!confirm(`${name} さんの朝礼完了を記録しますか？\n（スプレッドシートに今日の日付が入力されます）`)) return;
       await sendPost({ action: 'complete', targetNo: no });
@@ -339,11 +346,11 @@
 
     // メンバー削除処理
     async function deleteMember(no, name) {
-      if (!confirm(`本当に ${name} さん（No.${no}）を一覧から削除しますか？`)) return;
+      if (!confirm(`本当に ${name} さん（No.${no}）を削除しますか？`)) return;
       await sendPost({ action: 'delete', targetNo: no });
     }
 
-    // リクエスト共通関数
+    // POST送信共通関数
     async function sendPost(payload) {
       const buttons = document.querySelectorAll('button');
       buttons.forEach(b => b.disabled = true);

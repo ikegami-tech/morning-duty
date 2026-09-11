@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>朝礼当番表</title>
+  
+  <!-- 画像ファビコン設定（favicon.png を読み込み） -->
+  <link rel="icon" href="./favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="./favicon.png">
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -285,7 +290,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbz-Caw0R53MrqQlyyhw9U79wP7AWxLOA-sdrqrktra2oEUxinUmBx6ooqnlSfXfGss/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyDJIvWidEAUwPNdT6k_09tHxcA3YBgNSKTG8V9nSnaxwPNXhUckIVIUG1pgrGb8A/exec";
     let globalData = null;
     let pendingUndoPayload = null;
 
@@ -422,7 +427,6 @@
       box.innerHTML = "";
     }
 
-    // 手動プラス実行時の処理（通知バー & Undoボタン対応）
     async function submitCustomDuty(no, name) {
       const dateVal = document.getElementById('customDutyDate').value;
       if (!dateVal) {
@@ -436,7 +440,6 @@
       }
     }
 
-    // 手動マイナス実行時の処理（通知バー & Undoボタン対応）
     async function decrementDuty(no, name) {
       if (!confirm(`${name} さんの直近の朝礼完了を取り消し（マイナス）しますか？`)) return;
       const res = await sendPost({ action: 'decrement', targetNo: no });

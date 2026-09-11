@@ -127,9 +127,28 @@
     .btn-small { padding: 5px 12px; font-size: 0.75rem; border-radius: 14px; }
     .btn-add { background-color: #007bff; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; box-shadow: none; }
     .btn-add:hover { background-color: #0056b3; }
-    .btn-delete { background-color: #dc3545; padding: 5px 10px; font-size: 0.75rem; border-radius: 14px; box-shadow: none; }
+    .btn-delete { background-color: #dc3545; padding: 4px 8px; font-size: 0.7rem; border-radius: 6px; box-shadow: none; }
     .btn-delete:hover { background-color: #bd2130; }
     .btn-undo { background-color: #6c757d; padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; box-shadow: none; }
+
+    /* カウント調整用ボタン */
+    .btn-step {
+      background-color: #e9ecef;
+      color: #495057;
+      border: 1px solid #ced4da;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      box-shadow: none;
+      font-weight: bold;
+    }
+    .btn-step:hover { background-color: #dee2e6; transform: none; }
 
     .list-title { font-size: 1rem; margin-bottom: 12px; font-weight: bold; }
     .member-list { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -161,6 +180,7 @@
 
     .loading { text-align: center; padding: 40px; color: #666; }
 
+    /* モーダル */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -188,9 +208,27 @@
     .search-container { margin-bottom: 10px; }
     .search-input { width: 100%; background: #fff; }
     .edit-list-title { font-size: 0.85rem; font-weight: bold; color: #555; margin-bottom: 8px; }
-    .edit-member-list { background: white; border: 1px solid #eee; border-radius: 8px; max-height: 220px; overflow-y: auto; }
-    .edit-member-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
+    .edit-member-list { background: white; border: 1px solid #eee; border-radius: 8px; max-height: 240px; overflow-y: auto; }
+    .edit-member-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #eee; }
     .edit-member-item:last-child { border-bottom: none; }
+    
+    .edit-controls { display: flex; align-items: center; gap: 8px; }
+    .count-tag { font-size: 0.75rem; color: #666; font-weight: bold; width: 45px; text-align: center; }
+
+    /* 日付指定サブポップアップ */
+    .date-picker-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #eef5ff;
+      border: 1px solid #b8daff;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .date-picker-box label { font-size: 0.8rem; font-weight: bold; color: #004085; }
+    .date-picker-input { padding: 6px 10px; border-radius: 6px; border: 1px solid #ced4da; font-size: 0.85rem; }
+    .date-picker-actions { display: flex; justify-content: flex-end; gap: 6px; }
   </style>
 </head>
 <body>
@@ -231,10 +269,14 @@
           </div>
         </div>
 
-        <div class="edit-list-title">メンバーの削除</div>
+        <div class="edit-list-title">メンバー管理（回数調整・削除）</div>
         <div class="search-container">
           <input type="text" id="searchMemberInput" class="search-input" placeholder="🔍 名前で検索..." oninput="filterMemberList()">
         </div>
+
+        <!-- 日付指定ポップアップエリア（プラスボタン用） -->
+        <div id="datePickerContainer" style="display: none;"></div>
+
         <div id="editMemberList" class="edit-member-list">
           <div class="loading">読み込み中...</div>
         </div>
@@ -243,7 +285,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxpI6jy-GIIzM2rUIlj0bRhtsvrO_6QDG-fl0hPqZKOd9093GgFTGMnW56Nmt3l8iA/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHvy9b4imPVCh5n6dIM-IknjWBu7naJMXmraI_0wNKhN1sjkYMqtLQQikKU8A-uGw/exec";
     let globalData = null;
     let pendingUndoPayload = null;
 
@@ -346,11 +388,54 @@
               <span class="member-no">No.${item.no}</span>
               <span class="member-name">${item.name}</span>
             </div>
-            <button class="btn btn-delete" onclick="deleteMember(${item.no}, '${item.name}')">削除</button>
+            <div class="edit-controls">
+              <span class="count-tag">${item.doneCount || 0}回</span>
+              <button class="btn-step" onclick="decrementDuty(${item.no}, '${item.name}')" title="回数を減らす">-</button>
+              <button class="btn-step" onclick="openDatePicker(${item.no}, '${item.name}')" title="日付を指定して回数を増やす">+</button>
+              <button class="btn btn-delete" onclick="deleteMember(${item.no}, '${item.name}')">削除</button>
+            </div>
           </div>
         `;
       });
       container.innerHTML = html;
+    }
+
+    // 日付指定ポップアップを開く (プラスボタン時)
+    function openDatePicker(no, name) {
+      const box = document.getElementById('datePickerContainer');
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      box.className = "date-picker-box";
+      box.style.display = "flex";
+      box.innerHTML = `
+        <label>📅 ${name} さんの朝礼完了日を選択:</label>
+        <input type="date" id="customDutyDate" class="date-picker-input" value="${todayStr}">
+        <div class="date-picker-actions">
+          <button class="btn btn-undo" onclick="closeDatePicker()">キャンセル</button>
+          <button class="btn btn-add" onclick="submitCustomDuty(${no}, '${name}')">完了記録を追加</button>
+        </div>
+      `;
+    }
+
+    function closeDatePicker() {
+      const box = document.getElementById('datePickerContainer');
+      box.style.display = "none";
+      box.innerHTML = "";
+    }
+
+    async function submitCustomDuty(no, name) {
+      const dateVal = document.getElementById('customDutyDate').value;
+      if (!dateVal) {
+        alert("日付を選択してください。");
+        return;
+      }
+      closeDatePicker();
+      await sendPost({ action: 'complete', targetNo: no, customDate: dateVal });
+    }
+
+    async function decrementDuty(no, name) {
+      if (!confirm(`${name} さんの直近の朝礼完了を取り消し（マイナス）しますか？`)) return;
+      await sendPost({ action: 'decrement', targetNo: no });
     }
 
     function filterMemberList() {
@@ -361,10 +446,12 @@
     function openSettingsModal() {
       document.getElementById('settingsModal').style.display = 'flex';
       document.getElementById('searchMemberInput').value = '';
+      closeDatePicker();
       if (globalData) renderEditList(globalData);
     }
     function closeSettingsModal() {
       document.getElementById('settingsModal').style.display = 'none';
+      closeDatePicker();
     }
 
     function setButtonsDisabled(disabled) {
@@ -419,7 +506,6 @@
       
       const res = await sendPost({ action: 'delete', targetNo: no });
       if (res && res.success) {
-        // 退避された過去の日付データも含めてUndoペイロードを作成
         showUndoBar(`${name} さんを削除しました`, { 
           action: 'undo', 
           undoType: 'delete', 

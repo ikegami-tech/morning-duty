@@ -17,7 +17,6 @@
       padding: 16px;
       color: #333;
     }
-    /* モーダル表示時に背景スクロールをロックするクラス */
     body.modal-open {
       overflow: hidden;
     }
@@ -150,7 +149,6 @@
     .btn-delete:hover { background-color: #bd2130; }
     .btn-undo { background-color: #6c757d; padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; box-shadow: none; }
 
-    /* カウント調整用ボタン */
     .btn-step {
       background-color: #e9ecef;
       color: #495057;
@@ -199,14 +197,12 @@
 
     .loading { text-align: center; padding: 40px; color: #666; }
 
-    /* モーダル */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.4);
       display: flex; justify-content: center; align-items: center;
       z-index: 1000; padding: 16px; box-sizing: border-box;
-      /* 背景スクロール伝播を阻止 */
       overscroll-behavior: contain;
     }
     .modal-content {
@@ -219,11 +215,9 @@
     .close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; padding: 0; line-height: 1; }
     .close-btn:hover { color: #333; }
     
-    /* モーダル内部のスクロール制御 */
     .modal-body {
       padding: 16px 20px;
       overflow-y: auto;
-      /* モーダル内スクロールが端に達しても背景にスクロールを伝播させない */
       overscroll-behavior: contain;
     }
     
@@ -244,7 +238,6 @@
       border-radius: 8px;
       max-height: 240px;
       overflow-y: auto;
-      /* リスト内スクロールの連鎖阻止 */
       overscroll-behavior: contain;
     }
     .edit-member-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #eee; }
@@ -253,7 +246,6 @@
     .edit-controls { display: flex; align-items: center; gap: 6px; }
     .count-tag { font-size: 0.72rem; color: #666; font-weight: bold; width: 60px; text-align: center; }
 
-    /* 日付指定サブポップアップ */
     .date-picker-box {
       margin-top: 12px;
       padding: 12px;
@@ -326,6 +318,7 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwIp87YdBu23a2TrYwvVCyzMXAuBcm4Ian01DN9Hv5sJIsEVpllQZlWQxSJpIeXrxo/exec";
     let globalData = null;
     let pendingUndoPayload = null;
+    let retryCount = 0;
 
     function getTodayFormattedString() {
       const now = new Date();
@@ -336,19 +329,48 @@
       return `${year}年${month}月${date}日(${dayOfWeek})`;
     }
 
+    // データ取得関数（エラー時の自動リトライ機能を追加）
     async function fetchDutyData() {
       try {
-        const response = await fetch(GAS_URL);
-        const data = await response.json();
+        const response = await fetch(GAS_URL, { redirect: "follow" });
+        
+        // JSON形式で正しく返ってきたか検証
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error("HTML応答エラー（リトライ処理へ）");
+        }
+
         globalData = data;
+        retryCount = 0; // 成功したらリトライカウントリセット
         renderUI(data);
         renderEditList(data);
+
       } catch (error) {
-        document.getElementById('app').innerHTML = '<div class="loading">データの取得に失敗しました</div>';
-        console.error(error);
+        console.warn("データ通信失敗。再試行します:", error);
+        
+        // 最大3回まで自動再試行（リトライ）
+        if (retryCount < 3) {
+          retryCount++;
+          setTimeout(fetchDutyData, 1000); // 1秒後に再アクセス
+        } else {
+          document.getElementById('app').innerHTML = `
+            <div class="loading" style="color: #dc3545;">
+              データの通信に失敗しました。<br>
+              <button class="btn btn-add" style="margin-top:12px;" onclick="retryFetch()">再読み込み</button>
+            </div>`;
+        }
       } finally {
         setButtonsDisabled(false);
       }
+    }
+
+    function retryFetch() {
+      retryCount = 0;
+      document.getElementById('app').innerHTML = '<div class="loading">データを読み込み中...</div>';
+      fetchDutyData();
     }
 
     function renderUI(data) {
@@ -498,7 +520,6 @@
       if (globalData) renderEditList(globalData, keyword);
     }
 
-    /* モーダル表示時に背景スクロールを抑止 */
     function openSettingsModal() {
       document.body.classList.add('modal-open');
       document.getElementById('settingsModal').style.display = 'flex';
@@ -507,7 +528,6 @@
       if (globalData) renderEditList(globalData);
     }
 
-    /* モーダル閉じた際に背景スクロールを解除 */
     function closeSettingsModal() {
       document.body.classList.remove('modal-open');
       document.getElementById('settingsModal').style.display = 'none';

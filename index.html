@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>朝礼当番表</title>
   
-  <!-- 画像ファビコン設定（favicon.png を読み込み） -->
+  <!-- 画像ファビコン設定 -->
   <link rel="icon" href="./favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="./favicon.png">
 
@@ -97,6 +97,16 @@
       text-align: center;
       box-shadow: 0 4px 12px rgba(0,123,255,0.3);
       margin-bottom: 24px;
+    }
+    /* 本日の日付スタイル */
+    .next-card .today-date {
+      font-size: 0.85rem;
+      background: rgba(255, 255, 255, 0.15);
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      letter-spacing: 0.03em;
     }
     .next-card .label { font-size: 0.9rem; opacity: 0.9; }
     .next-card .name { font-size: 2.2rem; font-weight: bold; margin: 10px 0; }
@@ -290,9 +300,19 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyDJIvWidEAUwPNdT6k_09tHxcA3YBgNSKTG8V9nSnaxwPNXhUckIVIUG1pgrGb8A/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwIp87YdBu23a2TrYwvVCyzMXAuBcm4Ian01DN9Hv5sJIsEVpllQZlWQxSJpIeXrxo/exec";
     let globalData = null;
     let pendingUndoPayload = null;
+
+    // 今日のおすすめ文字列フォーマット（例: 2026年9月11日(金)）
+    function getTodayFormattedString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const date = now.getDate();
+      const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][now.getDay()];
+      return `${year}年${month}月${date}日(${dayOfWeek})`;
+    }
 
     async function fetchDutyData() {
       try {
@@ -317,8 +337,11 @@
         return;
       }
 
+      const todayStr = getTodayFormattedString();
+
       let html = `
         <div class="next-card">
+          <div class="today-date">📅 ${todayStr}</div>
           <div class="label">本日の予定当番</div>
           <div class="name">${data.next.name} さん</div>
           <div class="no">No. ${data.next.no}</div>

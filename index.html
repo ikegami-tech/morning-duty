@@ -27,7 +27,6 @@
       color: #555;
       margin: 0;
     }
-    /* スプレッドシートへのリンクボタン */
     .sheet-link {
       font-size: 0.8rem;
       color: #1d6f42;
@@ -41,6 +40,20 @@
     }
     .sheet-link:hover {
       background-color: #ceead6;
+    }
+
+    /* 取り消し通知通知バー */
+    .undo-bar {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
     }
 
     /* 管理フォーム（新規メンバー追加） */
@@ -152,6 +165,13 @@
     .btn-delete:hover {
       background-color: #bd2130;
     }
+    .btn-undo {
+      background-color: #6c757d;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      box-shadow: none;
+    }
 
     /* 一覧表示 */
     .list-title {
@@ -237,6 +257,9 @@
       </a>
     </div>
 
+    <!-- 取り消し案内バー -->
+    <div id="undoBar" style="display: none;"></div>
+
     <!-- メンバー追加フォーム -->
     <div class="admin-card">
       <div class="admin-title">新規メンバー追加</div>
@@ -252,7 +275,8 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwpdc2lXkGdoCjFgdzvNMhKkcbJ1QdW9D6agpsnEhxWmtmkMh5MJmOi6Jep4quF4Q/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbweIvU9QsOplS4Vu1tCKB9Jx8wdng1fVhdAyG4C7Y5AgrZsNV8eUAiMyTAcO7S7WA/exec";
+    let lastActionState = null; // 直前の操作状態を保持
 
     async function fetchDutyData() {
       try {
@@ -330,10 +354,30 @@
       buttons.forEach(b => b.disabled = disabled);
     }
 
-    // 本日の朝礼完了ボタン処理
+    // 直前の操作の「取り消しボタン」を表示するバーの制御
+    function showUndoBar(text, payload) {
+      const bar = document.getElementById('undoBar');
+      bar.className = "undo-bar";
+      bar.style.display = "flex";
+      bar.innerHTML = `
+        <span>${text}</span>
+        <button class="btn btn-undo" onclick="executeUndo(${JSON.stringify(payload).replace(/"/g, '&quot;')})">元に戻す ↩</button>
+      `;
+    }
+
+    function hideUndoBar() {
+      const bar = document.getElementById('undoBar');
+      bar.style.display = "none";
+    }
+
+    // 本日の朝礼完了処理
     async function submitDuty(no, name) {
       if (!confirm(`${name} さんの朝礼完了を記録しますか？\n（スプレッドシートに今日の日付が入力されます）`)) return;
-      await sendPost({ action: 'complete', targetNo: no });
+      
+      const res = await sendPost({ action: 'complete', targetNo: no });
+      if (res && res.success) {
+        showUndoBar(`${name} さんの完了を記録しました`, { action: 'undo', undoType: 'complete', targetNo: no });
+      }
     }
 
     // メンバー追加処理
@@ -346,14 +390,27 @@
       }
       if (!confirm(`${name} さんを新規追加しますか？`)) return;
 
-      await sendPost({ action: 'add', name: name });
-      input.value = '';
+      const res = await sendPost({ action: 'add', name: name });
+      if (res && res.success) {
+        input.value = '';
+        hideUndoBar();
+      }
     }
 
     // メンバー削除処理
     async function deleteMember(no, name) {
       if (!confirm(`本当に ${name} さん（No.${no}）を削除しますか？`)) return;
-      await sendPost({ action: 'delete', targetNo: no });
+      
+      const res = await sendPost({ action: 'delete', targetNo: no });
+      if (res && res.success) {
+        showUndoBar(`${name} さんを削除しました`, { action: 'undo', undoType: 'delete', targetNo: no, name: name });
+      }
+    }
+
+    // 取り消し実行
+    async function executeUndo(payload) {
+      hideUndoBar();
+      await sendPost(payload);
     }
 
     // POST送信共通関数
@@ -367,13 +424,19 @@
         });
 
         const result = await response.json();
-        alert(result.message);
+        if (!payload.action.includes('undo')) {
+          // 通常操作時はアラートなしで直接更新
+        } else {
+          alert(result.message);
+        }
         fetchDutyData();
+        return result;
 
       } catch (error) {
         alert("処理中にエラーが発生しました。");
         console.error(error);
         fetchDutyData();
+        return null;
       } finally {
         setButtonsDisabled(false);
       }

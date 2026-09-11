@@ -38,7 +38,6 @@
       gap: 8px;
     }
     
-    /* ボタン・リンクデザイン */
     .sheet-link {
       font-size: 0.8rem;
       color: #1d6f42;
@@ -72,7 +71,6 @@
       transform: rotate(30deg);
     }
 
-    /* 取り消し通知バー */
     .undo-bar {
       background-color: #fff3cd;
       border: 1px solid #ffeeba;
@@ -86,7 +84,6 @@
       font-size: 0.85rem;
     }
 
-    /* 当番強調表示カード */
     .next-card {
       background: linear-gradient(135deg, #007bff, #0056b3);
       color: white;
@@ -96,15 +93,8 @@
       box-shadow: 0 4px 12px rgba(0,123,255,0.3);
       margin-bottom: 24px;
     }
-    .next-card .label {
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-    .next-card .name {
-      font-size: 2.2rem;
-      font-weight: bold;
-      margin: 10px 0;
-    }
+    .next-card .label { font-size: 0.9rem; opacity: 0.9; }
+    .next-card .name { font-size: 2.2rem; font-weight: bold; margin: 10px 0; }
     .next-card .no {
       font-size: 0.85rem;
       background: rgba(255,255,255,0.2);
@@ -114,7 +104,6 @@
       margin-bottom: 16px;
     }
 
-    /* ボタン共通 */
     .btn {
       background-color: #28a745;
       color: white;
@@ -134,57 +123,16 @@
       cursor: not-allowed;
       transform: none;
     }
-    .btn-main {
-      padding: 10px 20px;
-      font-size: 0.95rem;
-      display: block;
-      margin: 0 auto;
-    }
-    .btn-small {
-      padding: 5px 12px;
-      font-size: 0.75rem;
-      border-radius: 14px;
-    }
-    .btn-add {
-      background-color: #007bff;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      box-shadow: none;
-    }
-    .btn-add:hover {
-      background-color: #0056b3;
-    }
-    .btn-delete {
-      background-color: #dc3545;
-      padding: 5px 10px;
-      font-size: 0.75rem;
-      border-radius: 14px;
-      box-shadow: none;
-    }
-    .btn-delete:hover {
-      background-color: #bd2130;
-    }
-    .btn-undo {
-      background-color: #6c757d;
-      padding: 4px 10px;
-      font-size: 0.75rem;
-      border-radius: 6px;
-      box-shadow: none;
-    }
+    .btn-main { padding: 10px 20px; font-size: 0.95rem; display: block; margin: 0 auto; }
+    .btn-small { padding: 5px 12px; font-size: 0.75rem; border-radius: 14px; }
+    .btn-add { background-color: #007bff; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; box-shadow: none; }
+    .btn-add:hover { background-color: #0056b3; }
+    .btn-delete { background-color: #dc3545; padding: 5px 10px; font-size: 0.75rem; border-radius: 14px; box-shadow: none; }
+    .btn-delete:hover { background-color: #bd2130; }
+    .btn-undo { background-color: #6c757d; padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; box-shadow: none; }
 
-    /* 一覧表示 */
-    .list-title {
-      font-size: 1rem;
-      margin-bottom: 12px;
-      font-weight: bold;
-    }
-    .member-list {
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
+    .list-title { font-size: 1rem; margin-bottom: 12px; font-weight: bold; }
+    .member-list { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .member-item {
       display: flex;
       justify-content: space-between;
@@ -192,33 +140,13 @@
       padding: 10px 14px;
       border-bottom: 1px solid #eee;
     }
-    .member-item:last-child {
-      border-bottom: none;
-    }
-    .member-item.is-next {
-      background-color: #e8f0fe;
-      border-left: 4px solid #007bff;
-    }
-    .member-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .member-no {
-      color: #888;
-      font-size: 0.8rem;
-      width: 40px;
-    }
-    .member-name {
-      font-weight: bold;
-    }
-    .member-actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .member-item:last-child { border-bottom: none; }
+    .member-item.is-next { background-color: #e8f0fe; border-left: 4px solid #007bff; }
+    .member-info { display: flex; align-items: center; gap: 8px; }
+    .member-no { color: #888; font-size: 0.8rem; width: 40px; }
+    .member-name { font-weight: bold; }
+    .member-actions { display: flex; align-items: center; gap: 6px; }
     
-    /* バッジ */
     .turn-badge {
       font-size: 0.7rem;
       padding: 3px 8px;
@@ -227,139 +155,42 @@
       display: inline-block;
       text-align: center;
     }
-    .turn-badge.today {
-      background-color: #007bff;
-      color: white;
-    }
-    .turn-badge.soon {
-      background-color: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeeba;
-    }
-    .turn-badge.normal {
-      background-color: #e9ecef;
-      color: #495057;
-    }
+    .turn-badge.today { background-color: #007bff; color: white; }
+    .turn-badge.soon { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .turn-badge.normal { background-color: #e9ecef; color: #495057; }
 
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-    }
+    .loading { text-align: center; padding: 40px; color: #666; }
 
-    /* モーダル（設定ダイアログ） */
     .modal-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.4);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      padding: 16px;
-      box-sizing: border-box;
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1000; padding: 16px; box-sizing: border-box;
     }
     .modal-content {
-      background: white;
-      width: 100%;
-      max-width: 480px;
-      max-height: 85vh;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      background: white; width: 100%; max-width: 480px; max-height: 85vh;
+      border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      display: flex; flex-direction: column; overflow: hidden;
     }
-    .modal-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-header h2 {
-      font-size: 1.05rem;
-      margin: 0;
-      color: #333;
-    }
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 1.4rem;
-      cursor: pointer;
-      color: #888;
-      padding: 0;
-      line-height: 1;
-    }
-    .close-btn:hover {
-      color: #333;
-    }
-    .modal-body {
-      padding: 16px 20px;
-      overflow-y: auto;
-    }
-    .admin-card {
-      background: #f8f9fa;
-      padding: 14px 16px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      border: 1px solid #e9ecef;
-    }
-    .admin-title {
-      font-size: 0.85rem;
-      font-weight: bold;
-      color: #555;
-      margin-bottom: 10px;
-    }
-    .add-form {
-      display: flex;
-      gap: 8px;
-    }
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h2 { font-size: 1.05rem; margin: 0; color: #333; }
+    .close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; padding: 0; line-height: 1; }
+    .close-btn:hover { color: #333; }
+    .modal-body { padding: 16px 20px; overflow-y: auto; }
+    .admin-card { background: #f8f9fa; padding: 14px 16px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e9ecef; }
+    .admin-title { font-size: 0.85rem; font-weight: bold; color: #555; margin-bottom: 10px; }
+    .add-form { display: flex; gap: 8px; }
     .add-input, .search-input {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      outline: none;
-      box-sizing: border-box;
+      flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box;
     }
-    .add-input:focus, .search-input:focus {
-      border-color: #007bff;
-    }
-    .search-container {
-      margin-bottom: 10px;
-    }
-    .search-input {
-      width: 100%;
-      background: #fff;
-    }
-    .edit-list-title {
-      font-size: 0.85rem;
-      font-weight: bold;
-      color: #555;
-      margin-bottom: 8px;
-    }
-    .edit-member-list {
-      background: white;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-    .edit-member-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 12px;
-      border-bottom: 1px solid #eee;
-    }
-    .edit-member-item:last-child {
-      border-bottom: none;
-    }
+    .add-input:focus, .search-input:focus { border-color: #007bff; }
+    .search-container { margin-bottom: 10px; }
+    .search-input { width: 100%; background: #fff; }
+    .edit-list-title { font-size: 0.85rem; font-weight: bold; color: #555; margin-bottom: 8px; }
+    .edit-member-list { background: white; border: 1px solid #eee; border-radius: 8px; max-height: 220px; overflow-y: auto; }
+    .edit-member-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
+    .edit-member-item:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
@@ -392,7 +223,6 @@
         <button class="close-btn" onclick="closeSettingsModal()">✕</button>
       </div>
       <div class="modal-body">
-        <!-- メンバー追加フォーム -->
         <div class="admin-card">
           <div class="admin-title">新規メンバー追加</div>
           <div class="add-form">
@@ -401,7 +231,6 @@
           </div>
         </div>
 
-        <!-- メンバー削除（検索＆一覧） -->
         <div class="edit-list-title">メンバーの削除</div>
         <div class="search-container">
           <input type="text" id="searchMemberInput" class="search-input" placeholder="🔍 名前で検索..." oninput="filterMemberList()">
@@ -414,8 +243,9 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxVDPdNsL_TajkcC61OCn7ZjwBP7P0-m1_ydwLssOInTji8M2gK-hUQ9OXsWI_BTd4/exec";
-    let globalData = null; // 最新の取得データを保持
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx8JRrzjHrSeNYYYxF0huiAmwCEpmDtR6E7jrKxOyYnEOdwcONeE4pmvR_jGD2wdzo/exec";
+    let globalData = null;
+    let pendingUndoPayload = null;
 
     async function fetchDutyData() {
       try {
@@ -432,7 +262,6 @@
       }
     }
 
-    // メイン画面描画
     function renderUI(data) {
       const app = document.getElementById('app');
       
@@ -490,7 +319,6 @@
       app.innerHTML = html;
     }
 
-    // 設定モーダル内の削除一覧描画（検索フィルター対応）
     function renderEditList(data, filterKeyword = "") {
       const container = document.getElementById('editMemberList');
       if (!data || !data.list || data.list.length === 0) {
@@ -498,10 +326,8 @@
         return;
       }
 
-      // No順にソート
       let sortedList = [...data.list].sort((a, b) => a.no - b.no);
 
-      // 検索キーワードで絞り込み
       if (filterKeyword.trim() !== "") {
         const kw = filterKeyword.trim().toLowerCase();
         sortedList = sortedList.filter(item => item.name.toLowerCase().includes(kw));
@@ -527,18 +353,14 @@
       container.innerHTML = html;
     }
 
-    // 検索入力時のリアルタイムフィルター
     function filterMemberList() {
       const keyword = document.getElementById('searchMemberInput').value;
-      if (globalData) {
-        renderEditList(globalData, keyword);
-      }
+      if (globalData) renderEditList(globalData, keyword);
     }
 
-    // モーダル開閉制御
     function openSettingsModal() {
       document.getElementById('settingsModal').style.display = 'flex';
-      document.getElementById('searchMemberInput').value = ''; // 検索窓クリア
+      document.getElementById('searchMemberInput').value = '';
       if (globalData) renderEditList(globalData);
     }
     function closeSettingsModal() {
@@ -550,23 +372,23 @@
       buttons.forEach(b => b.disabled = disabled);
     }
 
-    // 取り消しバー制御
     function showUndoBar(text, payload) {
+      pendingUndoPayload = payload;
       const bar = document.getElementById('undoBar');
       bar.className = "undo-bar";
       bar.style.display = "flex";
       bar.innerHTML = `
         <span>${text}</span>
-        <button class="btn btn-undo" onclick="executeUndo(${JSON.stringify(payload).replace(/"/g, '&quot;')})">元に戻す ↩</button>
+        <button class="btn btn-undo" onclick="executeUndo()">元に戻す ↩</button>
       `;
     }
 
     function hideUndoBar() {
+      pendingUndoPayload = null;
       const bar = document.getElementById('undoBar');
       bar.style.display = "none";
     }
 
-    // 本日の朝礼完了処理
     async function submitDuty(no, name) {
       if (!confirm(`${name} さんの朝礼完了を記録しますか？\n（スプレッドシートに今日の日付が入力されます）`)) return;
       
@@ -576,7 +398,6 @@
       }
     }
 
-    // メンバー追加処理
     async function addMember() {
       const input = document.getElementById('newMemberName');
       const name = input.value.trim();
@@ -593,7 +414,6 @@
       }
     }
 
-    // メンバー削除処理
     async function deleteMember(no, name) {
       if (!confirm(`本当に ${name} さん（No.${no}）を削除しますか？`)) return;
       
@@ -603,13 +423,13 @@
       }
     }
 
-    // 取り消し実行
-    async function executeUndo(payload) {
+    async function executeUndo() {
+      if (!pendingUndoPayload) return;
+      const payload = pendingUndoPayload;
       hideUndoBar();
       await sendPost(payload);
     }
 
-    // POST送信共通関数
     async function sendPost(payload) {
       setButtonsDisabled(true);
 
@@ -620,6 +440,9 @@
         });
 
         const result = await response.json();
+        if (payload.action === 'undo') {
+          alert(result.message);
+        }
         fetchDutyData();
         return result;
 

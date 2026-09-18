@@ -1,4 +1,4 @@
-const GAS_URL = "https://pliqxu3zdq43qzfbfw3eamxoyu0wdmoe.lambda-url.ap-southeast-2.on.aws/";
+const GAS_URL = "https://biv4iouzzt3rqyt2anb472ivv40aggxm.lambda-url.ap-southeast-2.on.aws/";
 let globalData = null;
 let pendingUndoPayload = null;
 let retryCount = 0;

@@ -154,7 +154,6 @@ function renderEditList(data, filterKeyword = "") {
           <span class="member-name">${item.name}</span>
         </div>
         <div class="edit-controls">
-          <span class="count-tag">${item.doneCount || 0}回完了</span>
           <button class="btn-step" onclick="decrementDuty(${item.no}, '${item.name}')" title="回数を減らす">-</button>
           <button class="btn-step" onclick="openDatePicker(${item.no}, '${item.name}')" title="日付を指定して回数を増やす">+</button>
           <button class="btn btn-delete" onclick="deleteMember(${item.no}, '${item.name}')">削除</button>

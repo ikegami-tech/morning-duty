@@ -289,7 +289,7 @@ function hideUndoBar() {
 }
 
 async function submitDuty(no, name) {
-  if (!confirm(`${name} さんの朝礼完了を記録しますか？\n（スプレッドシートに今日の日付が入力されます）`)) return;
+  if (!confirm(`${name} さんの朝礼完了を記録しますか？\n`)) return;
   
   const res = await sendPost({ action: 'complete', targetNo: no });
   if (res && res.success) {

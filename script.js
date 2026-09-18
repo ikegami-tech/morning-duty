@@ -1,4 +1,4 @@
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzOF3BpKoVZPjGpeNh8Q0lcKZSyahNxEV0aGjA1paG4yRNqu1WPrfgTB8FfDBOT6QU/exec";
+const GAS_URL = "https://pliqxu3zdq43qzfbfw3eamxoyu0wdmoe.lambda-url.ap-southeast-2.on.aws/";
 let globalData = null;
 let pendingUndoPayload = null;
 let retryCount = 0;

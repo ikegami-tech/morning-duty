@@ -2,6 +2,16 @@ const GAS_URL = "https://pro46l4wrvsvgoa7f5mkqwjgnm0fpgwr.lambda-url.ap-northeas
 let globalData = null;
 let pendingUndoPayload = null;
 let retryCount = 0;
+let currentMemoTargetNo = null;
+let editingMemoId = null;
+
+// 音声録音管理用変数
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+// プレビュー一時保存用
+let pendingTargetNo = null;
 
 // クレド（MIND 01〜09）のデータ
 const CREDO_DATA = [
@@ -55,8 +65,6 @@ async function fetchDutyData() {
           <button class="btn btn-add" style="margin-top:12px;" onclick="retryFetch()">再読み込み</button>
         </div>`;
     }
-  } finally {
-    setButtonsDisabled(false);
   }
 }
 
@@ -151,7 +159,9 @@ function renderEditList(data, filterKeyword = "") {
       <div class="edit-member-item">
         <div class="member-info">
           <span class="member-no">No.${item.no}</span>
-          <span class="member-name">${item.name}</span>
+          <button type="button" class="member-name-clickable" onclick="openMemoModal(${item.no}, '${item.name}')" title="クリックしてメモを開く">
+            ${item.name}
+          </button>
         </div>
         <div class="edit-controls">
           <button class="btn-step" onclick="decrementDuty(${item.no}, '${item.name}')" title="回数を減らす">-</button>
@@ -164,7 +174,168 @@ function renderEditList(data, filterKeyword = "") {
   container.innerHTML = html;
 }
 
-/* --- クレドモーダル関連処理（アコーディオン形式） --- */
+/* --- ヘッダー録音・確認プレビュー機能 --- */
+function toggleHeaderRecording() {
+  if (isRecording) {
+    stopHeaderRecording();
+  } else {
+    startHeaderRecording();
+  }
+}
+
+async function startHeaderRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: false,
+        autoGainControl: true
+      } 
+    });
+    
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = event => {
+      if (event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
+      await processAudioToPreview(audioBlob);
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+
+    const btn = document.getElementById('headerRecordBtn');
+    btn.classList.add('is-recording');
+    btn.textContent = '⏹️ 録音停止';
+
+    showRecordStatus(`🔴 朝礼を録音中...（他の操作も可能です）`, 'info');
+
+  } catch (err) {
+    alert('マイクの使用許可が必要です。ブラウザのマイクアクセスを許可してください。');
+    console.error('録音エラー:', err);
+  }
+}
+
+function stopHeaderRecording() {
+  if (mediaRecorder && mediaRecorder.state === "recording") {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    
+    isRecording = false;
+
+    const btn = document.getElementById('headerRecordBtn');
+    btn.classList.remove('is-recording');
+    btn.textContent = '🎙️ 朝礼録音';
+
+    showRecordStatus('⏳ AIが文字起こし・要約を生成中...（そのままお待ちください）', 'info');
+  }
+}
+
+async function processAudioToPreview(blob) {
+  try {
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = async () => {
+      const base64Data = reader.result.split(',')[1];
+      
+      let mimeType = blob.type || 'audio/webm';
+      if (mimeType.includes('mp4') || mimeType.includes('aac')) {
+        mimeType = 'audio/mp4';
+      } else if (mimeType.includes('ogg')) {
+        mimeType = 'audio/ogg';
+      } else {
+        mimeType = 'audio/webm';
+      }
+
+      pendingTargetNo = globalData && globalData.next ? globalData.next.no : null;
+
+      const result = await sendPost({
+        action: 'generateAudioSummaryOnly',
+        audioBase64: base64Data,
+        mimeType: mimeType
+      });
+
+      hideRecordStatus();
+
+      if (result && result.success === true && result.summaryText) {
+        if (result.summaryText.includes('【発言なし】')) {
+          showRecordStatus('🎤 音声（発言）が検出されませんでした。', 'info');
+          setTimeout(hideRecordStatus, 4000);
+          return;
+        }
+
+        document.getElementById('previewModalTitle').textContent = `🔍 朝礼メモの確認`;
+        document.getElementById('previewTextarea').value = result.summaryText;
+        document.getElementById('previewModal').style.display = 'flex';
+      } else {
+        const errMsg = (result && result.errorMessage) ? result.errorMessage : 'AI処理に失敗しました。もう一度お試しください。';
+        showRecordStatus(`❌ ${errMsg}`, 'error');
+        setTimeout(hideRecordStatus, 5000);
+      }
+    };
+  } catch (e) {
+    console.error('音声処理失敗:', e);
+    showRecordStatus('❌ 音声処理中にエラーが発生しました。', 'error');
+    setTimeout(hideRecordStatus, 5000);
+  }
+}
+
+async function confirmAndSendChat() {
+  const finalText = document.getElementById('previewTextarea').value.trim();
+  if (!finalText) {
+    alert("テキスト内容が空です。");
+    return;
+  }
+
+  const sendBtn = document.getElementById('sendChatBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '送信中...';
+
+  const result = await sendPost({
+    action: 'sendConfirmedChatMemo',
+    targetNo: pendingTargetNo,
+    summaryText: finalText
+  });
+
+  sendBtn.disabled = false;
+  sendBtn.textContent = '📤 Google Chatに送信';
+  document.getElementById('previewModal').style.display = 'none';
+
+  if (result && result.success === true) {
+    showRecordStatus(`✅ 朝礼要約を Google Chat に投稿しました！`, 'success');
+    setTimeout(hideRecordStatus, 5000);
+  } else {
+    showRecordStatus('❌ 送信に失敗しました。', 'error');
+    setTimeout(hideRecordStatus, 5000);
+  }
+}
+
+function cancelPreview() {
+  document.getElementById('previewModal').style.display = 'none';
+  pendingTargetNo = null;
+  showRecordStatus('録音データを破棄しました。', 'info');
+  setTimeout(hideRecordStatus, 3000);
+}
+
+function showRecordStatus(text, type) {
+  const bar = document.getElementById('recordStatusBar');
+  bar.className = `record-status-bar ${type}`;
+  bar.style.display = 'block';
+  bar.textContent = text;
+}
+
+function hideRecordStatus() {
+  const bar = document.getElementById('recordStatusBar');
+  bar.style.display = 'none';
+}
+
+/* --- クレドモーダル関連処理（アコーディオンUI対応） --- */
 function renderCredoList() {
   const container = document.getElementById('credoGrid');
   let html = "";
@@ -221,6 +392,155 @@ function selectRandomCredo() {
     targetCard.classList.add('active'); // 選ばれたカードを展開
     targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
+}
+
+/* --- メモモーダル制御 --- */
+function openMemoModal(no, name) {
+  currentMemoTargetNo = no;
+  editingMemoId = null;
+  
+  document.getElementById('settingsModal').style.display = 'none';
+  document.getElementById('memoModalTitle').textContent = `📝 ${name} さんのメモ`;
+  document.getElementById('memoInput').value = '';
+  document.getElementById('saveMemoBtn').textContent = 'メモを追加';
+
+  renderMemoTimeline();
+  document.getElementById('memoModal').style.display = 'flex';
+}
+
+function closeMemoModal() {
+  document.getElementById('memoModal').style.display = 'none';
+  currentMemoTargetNo = null;
+  editingMemoId = null;
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+
+function renderMemoTimeline() {
+  const timelineEl = document.getElementById('memoTimeline');
+  timelineEl.innerHTML = '';
+
+  if (!globalData || !globalData.list) return;
+  const member = globalData.list.find(m => Number(m.no) === Number(currentMemoTargetNo));
+  if (!member) return;
+
+  let memoList = member.memos ? [...member.memos] : [];
+  if (member.memo && member.memo.trim() !== "" && memoList.length === 0) {
+    memoList = [{ id: "legacy-1", text: member.memo, date: "以前のメモ" }];
+  }
+
+  if (memoList.length === 0) {
+    timelineEl.innerHTML = '<p style="color: #a0aec0; font-size: 0.82rem; text-align: center; margin: 20px 0;">メモはまだありません。</p>';
+    return;
+  }
+
+  memoList.reverse().forEach((memo) => {
+    const card = document.createElement('div');
+    card.className = 'memo-accordion-card';
+    card.id = `memoCard-${memo.id}`;
+
+    const lines = memo.text.split('\n');
+    const titlePreview = lines[0].trim() || '無題のメモ';
+    const bodyText = lines.slice(1).join('\n').trim();
+
+    let formattedDate = memo.date || '';
+    if (formattedDate.includes(' ')) {
+      formattedDate = formattedDate.split(' ')[0];
+    }
+
+    const bodyHtml = bodyText !== '' 
+      ? `<div class="memo-full-text">${escapeHtml(bodyText)}</div>`
+      : `<div class="memo-full-text" style="color: #94a3b8; font-style: italic; font-size: 0.8rem;">（詳細テキストなし）</div>`;
+
+    card.innerHTML = `
+      <div class="memo-accordion-header" onclick="toggleMemoCard('memoCard-${memo.id}')">
+        <div class="memo-title-preview">📌 ${escapeHtml(titlePreview)}</div>
+        <div class="memo-date-tag">
+          <span>${formattedDate}</span>
+          <span class="memo-arrow">▼</span>
+        </div>
+      </div>
+      <div class="memo-accordion-body">
+        ${bodyHtml}
+        <div class="memo-card-actions">
+          <button class="memo-card-btn edit" onclick="startEditMemo('${memo.id}', \`${escapeJsString(memo.text)}\`)">編集</button>
+          <button class="memo-card-btn delete" onclick="deleteMemoItem('${memo.id}')">削除</button>
+        </div>
+      </div>
+    `;
+    timelineEl.appendChild(card);
+  });
+}
+
+function toggleMemoCard(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.classList.toggle('active');
+  }
+}
+
+async function saveMemo() {
+  if (currentMemoTargetNo === null) return;
+
+  const text = document.getElementById('memoInput').value.trim();
+  if (!text) {
+    alert('メモ内容を入力してください。');
+    return;
+  }
+
+  const targetNo = currentMemoTargetNo;
+
+  if (editingMemoId !== null) {
+    await sendPost({ action: 'editMemo', targetNo: targetNo, memoId: editingMemoId, text: text });
+  } else {
+    await sendPost({ action: 'addMemo', targetNo: targetNo, text: text });
+  }
+
+  document.getElementById('memoInput').value = '';
+  editingMemoId = null;
+  document.getElementById('saveMemoBtn').textContent = 'メモを追加';
+
+  renderMemoTimeline();
+  if (globalData) renderEditList(globalData);
+}
+
+function startEditMemo(memoId, currentText) {
+  editingMemoId = memoId;
+  document.getElementById('memoInput').value = currentText;
+  document.getElementById('saveMemoBtn').textContent = '変更を保存';
+}
+
+async function deleteMemoItem(memoId) {
+  if (!confirm('このメモを削除しますか？')) return;
+
+  await sendPost({ action: 'deleteMemo', targetNo: currentMemoTargetNo, memoId: memoId });
+
+  if (editingMemoId === memoId) {
+    editingMemoId = null;
+    document.getElementById('memoInput').value = '';
+    document.getElementById('saveMemoBtn').textContent = 'メモを追加';
+  }
+
+  renderMemoTimeline();
+  if (globalData) renderEditList(globalData);
+}
+
+// ヘルパー関数
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeJsString(str) {
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\$/g, '\\$')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"');
 }
 
 /* --- モーダル・日付指定制御 --- */
@@ -284,11 +604,6 @@ function closeSettingsModal() {
   document.body.classList.remove('modal-open');
   document.getElementById('settingsModal').style.display = 'none';
   closeDatePicker();
-}
-
-function setButtonsDisabled(disabled) {
-  const buttons = document.querySelectorAll('button');
-  buttons.forEach(b => b.disabled = disabled);
 }
 
 function showUndoBar(text, payload) {
@@ -356,8 +671,6 @@ async function executeUndo() {
 }
 
 async function sendPost(payload) {
-  setButtonsDisabled(true);
-
   try {
     const response = await fetch(GAS_URL, {
       method: 'POST',
@@ -365,7 +678,9 @@ async function sendPost(payload) {
     });
 
     const result = await response.json();
-    fetchDutyData();
+    globalData = result;
+    renderUI(result);
+    renderEditList(result);
     return result;
 
   } catch (error) {
@@ -373,9 +688,24 @@ async function sendPost(payload) {
     console.error(error);
     fetchDutyData();
     return null;
-  } finally {
-    setButtonsDisabled(false);
   }
 }
 
 fetchDutyData();
+
+// 画面のスリープ復帰（タブの表示切り替え）を検知して状態をチェック
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    if (isRecording && mediaRecorder && mediaRecorder.state === "inactive") {
+      console.warn("スリープ復帰を検知: 録音ストリームが停止していたためリセットします。");
+      isRecording = false;
+      const btn = document.getElementById('headerRecordBtn');
+      if (btn) {
+        btn.classList.remove('is-recording');
+        btn.textContent = '🎙️ 朝礼録音';
+      }
+      showRecordStatus('⚠️ 画面スリープにより録音が中断されました。再度録音を行ってください。', 'error');
+      setTimeout(hideRecordStatus, 5000);
+    }
+  }
+});

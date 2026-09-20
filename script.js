@@ -164,20 +164,35 @@ function renderEditList(data, filterKeyword = "") {
   container.innerHTML = html;
 }
 
-/* --- クレドモーダル関連処理 --- */
+/* --- クレドモーダル関連処理（アコーディオン形式） --- */
 function renderCredoList() {
   const container = document.getElementById('credoGrid');
   let html = "";
   CREDO_DATA.forEach((item, index) => {
     html += `
-      <div class="credo-card" id="credoCard-${index}">
-        <div><span class="credo-no">${item.no}</span></div>
-        <div class="credo-title">${item.title}</div>
-        <div class="credo-text">${item.text}</div>
+      <div class="credo-card" id="credoCard-${index}" onclick="toggleCredoCard(${index})">
+        <div class="credo-header">
+          <div class="credo-header-left">
+            <span class="credo-no">${item.no}</span>
+            <span class="credo-title">${item.title}</span>
+          </div>
+          <span class="credo-arrow">▼</span>
+        </div>
+        <div class="credo-body">
+          ${item.text}
+        </div>
       </div>
     `;
   });
   container.innerHTML = html;
+}
+
+// タップ時にカードの展開／折りたたみを切替
+function toggleCredoCard(index) {
+  const targetCard = document.getElementById(`credoCard-${index}`);
+  if (targetCard) {
+    targetCard.classList.toggle('active');
+  }
 }
 
 function openCredoModal() {
@@ -191,14 +206,19 @@ function closeCredoModal() {
   document.getElementById('credoModal').style.display = 'none';
 }
 
+// ランダム選択時に自動で対象カードを展開してハイライト
 function selectRandomCredo() {
   const cards = document.querySelectorAll('.credo-card');
-  cards.forEach(c => c.classList.remove('highlight'));
+  cards.forEach(c => {
+    c.classList.remove('highlight');
+    c.classList.remove('active'); // 一旦すべて閉じる
+  });
   
   const randomIndex = Math.floor(Math.random() * CREDO_DATA.length);
   const targetCard = document.getElementById(`credoCard-${randomIndex}`);
   if (targetCard) {
     targetCard.classList.add('highlight');
+    targetCard.classList.add('active'); // 選ばれたカードを展開
     targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }

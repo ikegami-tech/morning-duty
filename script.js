@@ -20,7 +20,7 @@ let pendingTargetNo = null;
 const CREDO_DATA = [
   { no: "01", title: "見た目と印象は中身を語る。", text: "明るく元気にあいさつする人は、みんなから愛される。<br>明るく元気に笑って泣いて怒る人も、みんなから愛される。<br>感謝の気持ちを声にすると、やまびこになって返ってくる。<br>礼儀とマナーを身につけると、不思議と心もキレイになる。" },
   { no: "02", title: "お客様の心を理解する心。", text: "お客様に嘘をつく人は、家族や友人にも嘘をつく。<br>お客様と誠実に向き合う人は、すべての人と誠実に向き合う。<br>お客様の気持ちになって考えることは、自分の心の中を覗いてみることに等しい。" },
-  { no: "03", title: "基本に戻る素直さと勇気。", text: "難しいことができるよりも、当たり前のことをきちんと当たり前にできる方が難しい。<br>超えられない壁は、もう一度原点に立ち返って見つめることで、超えられる壁になる。" },
+  { no: "03", title: "基本に戻る素直さと勇気。", text: "難しいことができるよりも、当たり前のことをきちんと当たり前にできる方が難しい。<br>超えられない壁は、もう一度原点に立ち返って見つめることで、超えられる壁になる。" },
   { no: "04", title: "仕事を楽しむことの喜びと幸せ。", text: "楽しい仕事を探す人は、仕事を楽しめない。<br>辛さや苦しみを乗り越える喜びを知っている人は、仕事を楽しめる。<br>自分が幸せでない人は、人を幸せにはできない。" },
   { no: "05", title: "努力は成長となって報われる", text: "もう限界だと心が折れたとき、もう一歩だけ踏み出す強さがあれば、人は常に成長し続けることができる。<br>「昔は良かった」と言う人は、自分の人生を自ら否定している。<br>努力しない人は過去を振り返り、自分を磨き続ける人は未来を思う。" },
   { no: "06", title: "誇りを持てる仕事に出会えた奇跡。", text: "お客様に「ありがとう」と言われる仕事は、世の中にそれほど多くない。<br>いろんな人生と関わる仕事は、大きな責任と覚悟をともなう。<br>いろんな人生と関わる仕事だから、大きな喜びと満足があるし、自分の人生も豊かにしてくれる。" },
@@ -221,7 +221,26 @@ async function startHeaderRecording() {
       } 
     });
     
-    mediaRecorder = new MediaRecorder(stream);
+    // 長時間録音対策：32kbpsにビットレートを抑えて軽量化
+    const recorderOptions = {
+      audioBitsPerSecond: 32000
+    };
+
+    if (typeof MediaRecorder.isTypeSupported === 'function') {
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        recorderOptions.mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        recorderOptions.mimeType = 'audio/mp4';
+      }
+    }
+
+    try {
+      mediaRecorder = new MediaRecorder(stream, recorderOptions);
+    } catch (e) {
+      console.warn('指定したオプションでのMediaRecorder生成に失敗したためデフォルト設定で起動します:', e);
+      mediaRecorder = new MediaRecorder(stream);
+    }
+
     audioChunks = [];
 
     mediaRecorder.ondataavailable = event => {

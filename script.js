@@ -15,7 +15,10 @@ let wakeLock = null;
 
 // プレビュー・下書き保存用変数
 let pendingTargetNo = null;
-let draftSummary = null; // { targetNo: number, text: string }
+let draftSummary = null;
+
+// デフォルトアバター画像
+const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=";
 
 // クレド（MIND 01〜09）のデータ
 const CREDO_DATA = [
@@ -29,6 +32,42 @@ const CREDO_DATA = [
   { no: "08", title: "競い合いながら助け合える仲間がいる。", text: "競い合いながら一緒に成長できる仲間は、困難にぶつかったとき一緒に乗り越えられる仲間であり、人生のかけがえのない財産になる。" },
   { no: "09", title: "自分を叶えるための最高の場所。", text: "一度しかない人生でどんな自分を叶えるか。<br>自分を自立させ、成長させていくことは、自分がこの世界にとってかけがえのない存在として素敵に生きていることの証しに他ならない。" }
 ];
+
+function getAvatarUrl(item) {
+  if (item && item.avatarUrl && item.avatarUrl.trim() !== "") {
+    return item.avatarUrl;
+  }
+  return DEFAULT_AVATAR + encodeURIComponent(item ? item.name : "user");
+}
+
+/* --- 画像ファイルのクッキリ高画質＆正方形トリミング処理 --- */
+function resizeImageFile(file, targetSize = 400) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        const ctx = canvas.getContext('2d');
+
+        const minSide = Math.min(img.width, img.height);
+        const sx = (img.width - minSide) / 2;
+        const sy = (img.height - minSide) / 2;
+
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, targetSize, targetSize);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+}
 
 /* --- 画面スリープ防止（Wake Lock API）機能 --- */
 async function requestWakeLock() {
@@ -113,11 +152,15 @@ function renderUI(data) {
   }
 
   const todayStr = getTodayFormattedString();
+  const nextAvatar = getAvatarUrl(data.next);
 
   let html = `
     <div class="next-card">
       <div class="today-date">📅 ${todayStr}</div>
       <div class="label">次の当番予定</div>
+      <div class="next-avatar-wrapper">
+        <img src="${nextAvatar}" alt="${data.next.name}" class="next-avatar-img" onerror="this.src='${DEFAULT_AVATAR}user'">
+      </div>
       <div class="name">${data.next.name} さん</div>
       <div class="no">No. ${data.next.no}</div>
       <button class="btn btn-main" onclick="submitDuty(${data.next.no}, '${data.next.name}')">本日の朝礼完了</button>
@@ -139,17 +182,20 @@ function renderUI(data) {
       badgeText = "次回";
       badgeClass = "soon";
     } else if (index <= 3) {
-      badgeText = `もうすぐ (${index}営業日後)`;
+      badgeText = `もうすぐ<br>(${index}営業日後)`;
       badgeClass = "soon";
     } else {
       badgeText = `${index}営業日後`;
       badgeClass = "normal";
     }
 
+    const avatarUrl = getAvatarUrl(item);
+
     html += `
       <div class="member-item ${isNext ? 'is-next' : ''}">
         <div class="member-info">
           <span class="member-no">No.${item.no}</span>
+          <img src="${avatarUrl}" alt="${item.name}" class="member-avatar" onerror="this.src='${DEFAULT_AVATAR}user'">
           <span class="member-name">${item.name}</span>
         </div>
         <div class="member-actions">
@@ -185,15 +231,18 @@ function renderEditList(data, filterKeyword = "") {
 
   let html = "";
   sortedList.forEach(item => {
+    const avatarUrl = getAvatarUrl(item);
     html += `
       <div class="edit-member-item">
         <div class="member-info">
           <span class="member-no">No.${item.no}</span>
           <button type="button" class="member-name-clickable" onclick="openMemoModal(${item.no}, '${item.name}')" title="クリックしてメモを開く">
+            <img src="${avatarUrl}" alt="${item.name}" class="member-avatar" style="width:22px;height:22px;" onerror="this.src='${DEFAULT_AVATAR}user'">
             ${item.name}
           </button>
         </div>
         <div class="edit-controls">
+          <button class="btn-step" onclick="openAvatarEditor(${item.no}, '${item.name}', \`${item.avatarUrl || ''}\`)" title="アイコン画像変更">🖼️</button>
           <button class="btn-step" onclick="decrementDuty(${item.no}, '${item.name}')" title="回数を減らす">-</button>
           <button class="btn-step" onclick="openDatePicker(${item.no}, '${item.name}')" title="日付を指定して回数を増やす">+</button>
           <button class="btn btn-delete" onclick="deleteMember(${item.no}, '${item.name}')">削除</button>
@@ -202,6 +251,48 @@ function renderEditList(data, filterKeyword = "") {
     `;
   });
   container.innerHTML = html;
+}
+
+/* --- 画像アイコン編集ポップアップ --- */
+function openAvatarEditor(no, name, currentUrl) {
+  const box = document.getElementById('datePickerContainer');
+
+  box.className = "date-picker-box";
+  box.style.display = "flex";
+  box.innerHTML = `
+    <label>🖼️ ${name} さんのアイコン画像設定:</label>
+    <input type="text" id="customAvatarUrl" class="add-input" placeholder="https://... (画像URL)" value="${currentUrl.startsWith('data:') ? '' : currentUrl}" style="font-size:0.8rem;">
+    <div style="font-size:0.75rem; color:#666;">またはファイルを選択 (.jpg / .png):</div>
+    <input type="file" id="customAvatarFile" accept="image/*" style="font-size:0.8rem;">
+    <div class="date-picker-actions" style="margin-top:6px;">
+      <button class="btn btn-undo" onclick="closeDatePicker()">キャンセル</button>
+      <button class="btn btn-add" onclick="submitUpdateAvatar(${no}, '${name}')">画像を更新</button>
+    </div>
+  `;
+}
+
+async function submitUpdateAvatar(no, name) {
+  const urlInput = document.getElementById('customAvatarUrl');
+  const fileInput = document.getElementById('customAvatarFile');
+  
+  let finalAvatarUrl = urlInput ? urlInput.value.trim() : "";
+
+  if (fileInput && fileInput.files && fileInput.files[0]) {
+    try {
+      showRecordStatus('🖼️ 高画質処理中...', 'info');
+      finalAvatarUrl = await resizeImageFile(fileInput.files[0]);
+    } catch (err) {
+      alert("画像の読み込みに失敗しました。");
+      return;
+    }
+  }
+
+  closeDatePicker();
+  const res = await sendPost({ action: 'updateAvatar', targetNo: no, avatarUrl: finalAvatarUrl });
+  if (res && res.success) {
+    showRecordStatus(`✅ ${name} さんのアイコン画像を更新しました`, 'success');
+    setTimeout(hideRecordStatus, 3000);
+  }
 }
 
 /* --- ヘッダー録音・確認プレビュー機能 --- */
@@ -771,17 +862,35 @@ async function submitDuty(no, name) {
 }
 
 async function addMember() {
-  const input = document.getElementById('newMemberName');
-  const name = input.value.trim();
+  const nameInput = document.getElementById('newMemberName');
+  const avatarUrlInput = document.getElementById('newMemberAvatar');
+  const avatarFileInput = document.getElementById('newMemberAvatarFile');
+
+  const name = nameInput.value.trim();
+  let avatarUrl = avatarUrlInput ? avatarUrlInput.value.trim() : "";
+
   if (!name) {
     alert("名前を入力してください。");
     return;
   }
+
+  if (avatarFileInput && avatarFileInput.files && avatarFileInput.files[0]) {
+    try {
+      showRecordStatus('🖼️ 高画質処理中...', 'info');
+      avatarUrl = await resizeImageFile(avatarFileInput.files[0]);
+    } catch (err) {
+      alert("画像の読み込みに失敗しました。");
+      return;
+    }
+  }
+
   if (!confirm(`${name} さんを新規追加しますか？`)) return;
 
-  const res = await sendPost({ action: 'add', name: name });
+  const res = await sendPost({ action: 'add', name: name, avatarUrl: avatarUrl });
   if (res && res.success) {
-    input.value = '';
+    nameInput.value = '';
+    if (avatarUrlInput) avatarUrlInput.value = '';
+    if (avatarFileInput) avatarFileInput.value = '';
     hideUndoBar();
   }
 }

@@ -215,7 +215,6 @@ function toggleHeaderRecording() {
 
 async function startHeaderRecording() {
   try {
-    // マイクの感度を調整（音声を綺麗に拾いやすく変更）
     const stream = await navigator.mediaDevices.getUserMedia({ 
       audio: {
         echoCancellation: true,
@@ -348,7 +347,7 @@ function saveDraft() {
   const selectedTargetNo = selectEl ? Number(selectEl.value) : pendingTargetNo;
 
   if (!finalText) {
-    alert("テキスト内容が空です。");
+    document.getElementById('previewModal').style.display = 'none';
     return;
   }
 
@@ -364,7 +363,7 @@ function saveDraft() {
   }
 
   document.getElementById('previewModal').style.display = 'none';
-  showRecordStatus('💾 朝礼メモを下書き保存しました。アプリを再開しても「下書きを開く」から読み込めます。', 'info');
+  showRecordStatus('💾 朝礼メモを下書き保存しました。「下書きを開く」から再開できます。', 'info');
   updateDraftBtnUI();
 }
 

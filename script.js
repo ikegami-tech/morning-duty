@@ -80,7 +80,7 @@ async function fetchDutyData() {
     retryCount = 0;
     renderUI(data);
     renderEditList(data);
-    loadSavedDraft(); // 下書き自動読み込み
+    loadSavedDraft();
 
   } catch (error) {
     console.warn("データ通信失敗。再試行します:", error);
@@ -215,15 +215,15 @@ function toggleHeaderRecording() {
 
 async function startHeaderRecording() {
   try {
+    // マイクの感度を調整（音声を綺麗に拾いやすく変更）
     const stream = await navigator.mediaDevices.getUserMedia({ 
       audio: {
         echoCancellation: true,
-        noiseSuppression: false,
+        noiseSuppression: true,
         autoGainControl: true
       } 
     });
     
-    // 長時間録音対策：32kbpsにビットレートを抑えて軽量化
     const recorderOptions = {
       audioBitsPerSecond: 32000
     };
@@ -445,7 +445,7 @@ async function confirmAndSendChat() {
   document.getElementById('previewModal').style.display = 'none';
 
   if (result && result.success === true) {
-    clearDraft(); // 送信成功時に下書きを削除
+    clearDraft();
 
     showRecordStatus(`✅ 朝礼要約を Google Chat に投稿しました！`, 'success');
     setTimeout(hideRecordStatus, 5000);

@@ -13,14 +13,15 @@ let isRecording = false;
 // 画面スリープ防止（Wake Lock）用変数
 let wakeLock = null;
 
-// プレビュー一時保存用
+// プレビュー・下書き保存用変数
 let pendingTargetNo = null;
+let draftSummary = null; // { targetNo: number, text: string }
 
 // クレド（MIND 01〜09）のデータ
 const CREDO_DATA = [
   { no: "01", title: "見た目と印象は中身を語る。", text: "明るく元気にあいさつする人は、みんなから愛される。<br>明るく元気に笑って泣いて怒る人も、みんなから愛される。<br>感謝の気持ちを声にすると、やまびこになって返ってくる。<br>礼儀とマナーを身につけると、不思議と心もキレイになる。" },
   { no: "02", title: "お客様の心を理解する心。", text: "お客様に嘘をつく人は、家族や友人にも嘘をつく。<br>お客様と誠実に向き合う人は、すべての人と誠実に向き合う。<br>お客様の気持ちになって考えることは、自分の心の中を覗いてみることに等しい。" },
-  { no: "03", title: "基本に戻る素直さと勇気。", text: "難しいことができるよりも、当たり前のことをきちんと当たり前にできる方が難しい。<br>超えられない壁は、もう一度原点に立ち返って見つめることで、超えられる壁になる。" },
+  { no: "03", title: "基本に戻る素直さと勇気。", text: "難しいことができるよりも、当たり前のことをきちんと当たり前にできる方が難しい。<br>超えられない壁は、もう一度原点に立ち返って見つめることで、超えられる壁になる。" },
   { no: "04", title: "仕事を楽しむことの喜びと幸せ。", text: "楽しい仕事を探す人は、仕事を楽しめない。<br>辛さや苦しみを乗り越える喜びを知っている人は、仕事を楽しめる。<br>自分が幸せでない人は、人を幸せにはできない。" },
   { no: "05", title: "努力は成長となって報われる", text: "もう限界だと心が折れたとき、もう一歩だけ踏み出す強さがあれば、人は常に成長し続けることができる。<br>「昔は良かった」と言う人は、自分の人生を自ら否定している。<br>努力しない人は過去を振り返り、自分を磨き続ける人は未来を思う。" },
   { no: "06", title: "誇りを持てる仕事に出会えた奇跡。", text: "お客様に「ありがとう」と言われる仕事は、世の中にそれほど多くない。<br>いろんな人生と関わる仕事は、大きな責任と覚悟をともなう。<br>いろんな人生と関わる仕事だから、大きな喜びと満足があるし、自分の人生も豊かにしてくれる。" },
@@ -79,6 +80,7 @@ async function fetchDutyData() {
     retryCount = 0;
     renderUI(data);
     renderEditList(data);
+    loadSavedDraft(); // 下書き自動読み込み
 
   } catch (error) {
     console.warn("データ通信失敗。再試行します:", error);
@@ -250,7 +252,7 @@ async function startHeaderRecording() {
     };
 
     mediaRecorder.onstop = async () => {
-      releaseWakeLock(); // 録音完了時にスリープ防止を解除
+      releaseWakeLock();
       const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
       await processAudioToPreview(audioBlob);
     };
@@ -258,7 +260,6 @@ async function startHeaderRecording() {
     mediaRecorder.start();
     isRecording = true;
 
-    // 録音開始時に画面スリープ防止を起動
     await requestWakeLock();
 
     const btn = document.getElementById('headerRecordBtn');
@@ -279,8 +280,6 @@ function stopHeaderRecording() {
     mediaRecorder.stream.getTracks().forEach(track => track.stop());
     
     isRecording = false;
-
-    // スリープ防止を解除
     releaseWakeLock();
 
     const btn = document.getElementById('headerRecordBtn');
@@ -324,6 +323,8 @@ async function processAudioToPreview(blob) {
           return;
         }
 
+        populateMemberSelect(globalData && globalData.next ? globalData.next.no : null);
+
         document.getElementById('previewModalTitle').textContent = `🔍 朝礼メモの確認`;
         document.getElementById('previewTextarea').value = result.summaryText;
         document.getElementById('previewModal').style.display = 'flex';
@@ -340,6 +341,85 @@ async function processAudioToPreview(blob) {
   }
 }
 
+/* --- 下書き保存・再開・ストレージ永続化制御 --- */
+function saveDraft() {
+  const finalText = document.getElementById('previewTextarea').value.trim();
+  const selectEl = document.getElementById('previewMemberSelect');
+  const selectedTargetNo = selectEl ? Number(selectEl.value) : pendingTargetNo;
+
+  if (!finalText) {
+    alert("テキスト内容が空です。");
+    return;
+  }
+
+  draftSummary = {
+    targetNo: selectedTargetNo,
+    text: finalText
+  };
+
+  try {
+    localStorage.setItem('morning_duty_draft', JSON.stringify(draftSummary));
+  } catch (e) {
+    console.warn('localStorage 保存失敗:', e);
+  }
+
+  document.getElementById('previewModal').style.display = 'none';
+  showRecordStatus('💾 朝礼メモを下書き保存しました。アプリを再開しても「下書きを開く」から読み込めます。', 'info');
+  updateDraftBtnUI();
+}
+
+function loadSavedDraft() {
+  try {
+    const saved = localStorage.getItem('morning_duty_draft');
+    if (saved) {
+      draftSummary = JSON.parse(saved);
+      updateDraftBtnUI();
+    }
+  } catch (e) {
+    console.warn('下書き読み込み失敗:', e);
+  }
+}
+
+function openDraft() {
+  if (!draftSummary) return;
+
+  populateMemberSelect(draftSummary.targetNo);
+  document.getElementById('previewTextarea').value = draftSummary.text;
+  document.getElementById('previewModalTitle').textContent = `🔍 朝礼メモの確認 (下書き)`;
+  document.getElementById('previewModal').style.display = 'flex';
+}
+
+function clearDraft() {
+  draftSummary = null;
+  try {
+    localStorage.removeItem('morning_duty_draft');
+  } catch (e) {}
+  updateDraftBtnUI();
+}
+
+function updateDraftBtnUI() {
+  const btn = document.getElementById('openDraftBtn');
+  if (btn) {
+    btn.style.display = draftSummary ? 'inline-block' : 'none';
+  }
+}
+
+function populateMemberSelect(selectedNo) {
+  const selectEl = document.getElementById('previewMemberSelect');
+  if (selectEl && globalData && globalData.list) {
+    selectEl.innerHTML = '';
+    globalData.list.forEach(member => {
+      const option = document.createElement('option');
+      option.value = member.no;
+      option.textContent = `No.${member.no} ${member.name} さん`;
+      if (selectedNo !== null && Number(member.no) === Number(selectedNo)) {
+        option.selected = true;
+      }
+      selectEl.appendChild(option);
+    });
+  }
+}
+
 async function confirmAndSendChat() {
   const finalText = document.getElementById('previewTextarea').value.trim();
   if (!finalText) {
@@ -347,13 +427,16 @@ async function confirmAndSendChat() {
     return;
   }
 
+  const selectEl = document.getElementById('previewMemberSelect');
+  const selectedTargetNo = selectEl ? Number(selectEl.value) : pendingTargetNo;
+
   const sendBtn = document.getElementById('sendChatBtn');
   sendBtn.disabled = true;
   sendBtn.textContent = '送信中...';
 
   const result = await sendPost({
     action: 'sendConfirmedChatMemo',
-    targetNo: pendingTargetNo,
+    targetNo: selectedTargetNo,
     summaryText: finalText
   });
 
@@ -362,6 +445,8 @@ async function confirmAndSendChat() {
   document.getElementById('previewModal').style.display = 'none';
 
   if (result && result.success === true) {
+    clearDraft(); // 送信成功時に下書きを削除
+
     showRecordStatus(`✅ 朝礼要約を Google Chat に投稿しました！`, 'success');
     setTimeout(hideRecordStatus, 5000);
   } else {
@@ -371,10 +456,13 @@ async function confirmAndSendChat() {
 }
 
 function cancelPreview() {
-  document.getElementById('previewModal').style.display = 'none';
-  pendingTargetNo = null;
-  showRecordStatus('録音データを破棄しました。', 'info');
-  setTimeout(hideRecordStatus, 3000);
+  if (confirm('この要約（下書き）を完全に削除しますか？')) {
+    document.getElementById('previewModal').style.display = 'none';
+    pendingTargetNo = null;
+    clearDraft();
+    showRecordStatus('要約データを削除しました。', 'info');
+    setTimeout(hideRecordStatus, 3000);
+  }
 }
 
 function showRecordStatus(text, type) {
@@ -389,7 +477,7 @@ function hideRecordStatus() {
   bar.style.display = 'none';
 }
 
-/* --- クレドモーダル関連処理（アコーディオンUI対応） --- */
+/* --- クレドモーダル関連処理 --- */
 function renderCredoList() {
   const container = document.getElementById('credoGrid');
   let html = "";
@@ -412,7 +500,6 @@ function renderCredoList() {
   container.innerHTML = html;
 }
 
-// タップ時にカードの展開／折りたたみを切替
 function toggleCredoCard(index) {
   const targetCard = document.getElementById(`credoCard-${index}`);
   if (targetCard) {
@@ -431,19 +518,18 @@ function closeCredoModal() {
   document.getElementById('credoModal').style.display = 'none';
 }
 
-// ランダム選択時に自動で対象カードを展開してハイライト
 function selectRandomCredo() {
   const cards = document.querySelectorAll('.credo-card');
   cards.forEach(c => {
     c.classList.remove('highlight');
-    c.classList.remove('active'); // 一旦すべて閉じる
+    c.classList.remove('active');
   });
   
   const randomIndex = Math.floor(Math.random() * CREDO_DATA.length);
   const targetCard = document.getElementById(`credoCard-${randomIndex}`);
   if (targetCard) {
     targetCard.classList.add('highlight');
-    targetCard.classList.add('active'); // 選ばれたカードを展開
+    targetCard.classList.add('active');
     targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
@@ -578,7 +664,6 @@ async function deleteMemoItem(memoId) {
   if (globalData) renderEditList(globalData);
 }
 
-// ヘルパー関数
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -747,7 +832,6 @@ async function sendPost(payload) {
 
 fetchDutyData();
 
-// 画面のスリープ復帰（タブの表示切り替え）を検知して状態チェック＆スリープ防止の自動復旧
 document.addEventListener("visibilitychange", async () => {
   if (document.visibilityState === "visible") {
     if (isRecording) {
@@ -763,7 +847,6 @@ document.addEventListener("visibilitychange", async () => {
         showRecordStatus('⚠️ 画面スリープにより録音が中断されました。再度録音を行ってください。', 'error');
         setTimeout(hideRecordStatus, 5000);
       } else {
-        // バックグラウンド復帰時に Wake Lock が解除されていた場合は再取得
         await requestWakeLock();
       }
     }

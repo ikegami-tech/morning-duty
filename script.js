@@ -407,16 +407,13 @@ async function processAudioToPreview(blob) {
       hideRecordStatus();
 
       if (result && result.success === true && result.summaryText) {
-        if (result.summaryText.includes('【発言なし】')) {
-          showRecordStatus('🎤 音声（発言）が検出されませんでした。', 'info');
-          setTimeout(hideRecordStatus, 4000);
-          return;
-        }
-
         populateMemberSelect(globalData && globalData.next ? globalData.next.no : null);
 
         document.getElementById('previewModalTitle').textContent = `🔍 朝礼メモの確認`;
         document.getElementById('previewTextarea').value = result.summaryText;
+        
+        // 背後スクロール防止クラスを追加
+        document.body.classList.add('modal-open');
         document.getElementById('previewModal').style.display = 'flex';
       } else {
         const errMsg = (result && result.errorMessage) ? result.errorMessage : 'AI処理に失敗しました。もう一度お試しください。';
@@ -438,6 +435,7 @@ function saveDraft() {
   const selectedTargetNo = selectEl ? Number(selectEl.value) : pendingTargetNo;
 
   if (!finalText) {
+    document.body.classList.remove('modal-open');
     document.getElementById('previewModal').style.display = 'none';
     return;
   }
@@ -453,6 +451,8 @@ function saveDraft() {
     console.warn('localStorage 保存失敗:', e);
   }
 
+  // 背後スクロール防止クラスを解除
+  document.body.classList.remove('modal-open');
   document.getElementById('previewModal').style.display = 'none';
   showRecordStatus('💾 朝礼メモを下書き保存しました。「下書きを開く」から再開できます。', 'info');
   updateDraftBtnUI();
@@ -476,6 +476,9 @@ function openDraft() {
   populateMemberSelect(draftSummary.targetNo);
   document.getElementById('previewTextarea').value = draftSummary.text;
   document.getElementById('previewModalTitle').textContent = `🔍 朝礼メモの確認 (下書き)`;
+  
+  // 背後スクロール防止クラスを追加
+  document.body.classList.add('modal-open');
   document.getElementById('previewModal').style.display = 'flex';
 }
 
@@ -532,6 +535,9 @@ async function confirmAndSendChat() {
 
   sendBtn.disabled = false;
   sendBtn.textContent = '📤 Google Chatに送信';
+  
+  // 背後スクロール防止クラスを解除
+  document.body.classList.remove('modal-open');
   document.getElementById('previewModal').style.display = 'none';
 
   if (result && result.success === true) {
@@ -547,6 +553,8 @@ async function confirmAndSendChat() {
 
 function cancelPreview() {
   if (confirm('この要約（下書き）を完全に削除しますか？')) {
+    // 背後スクロール防止クラスを解除
+    document.body.classList.remove('modal-open');
     document.getElementById('previewModal').style.display = 'none';
     pendingTargetNo = null;
     clearDraft();

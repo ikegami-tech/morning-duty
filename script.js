@@ -1,4 +1,4 @@
-const GAS_URL = "https://pro46l4wrvsvgoa7f5mkqwjgnm0fpgwr.lambda-url.ap-northeast-1.on.aws/";
+const GAS_URL = "https://pro46l4wrvsvgoa7f5mkqwjgnm0fpgwr.lambda-url.ap-northeast-1.on.aws/"; // ★テスト環境の場合はテスト用URLに変更
 let globalData = null;
 let pendingUndoPayload = null;
 let retryCount = 0;
@@ -99,11 +99,22 @@ function releaseWakeLock() {
 
 function getTodayFormattedString() {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const date = now.getDate();
-  const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][now.getDay()];
+  const jstNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  const year = jstNow.getFullYear();
+  const month = jstNow.getMonth() + 1;
+  const date = jstNow.getDate();
+  const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][jstNow.getDay()];
   return `${year}年${month}月${date}日(${dayOfWeek})`;
+}
+
+// 今日の日本時間日付文字列（YYYY-MM-DD）を取得
+function getTodayIsoDateString() {
+  const now = new Date();
+  const jstNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  const year = jstNow.getFullYear();
+  const month = String(jstNow.getMonth() + 1).padStart(2, '0');
+  const date = String(jstNow.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
 }
 
 async function fetchDutyData() {
@@ -379,7 +390,7 @@ function stopHeaderRecording() {
     btn.classList.remove('is-recording');
     btn.textContent = '🎙️ 朝礼録音';
 
-    // ★ 全画面ポップアップ（要約中モーダル）を表示
+    // 全画面ポップアップ（要約中モーダル）を表示
     document.body.classList.add('modal-open');
     const procModal = document.getElementById('processingModal');
     if (procModal) procModal.style.display = 'flex';
@@ -402,7 +413,7 @@ async function processAudioToPreview(blob) {
         mimeType = 'audio/webm';
       }
 
-      // ★ 直前の録音データをやり直し用にローカルストレージへ一時退避
+      // 直前の録音データをやり直し用にローカルストレージへ一時退避
       lastRecordedAudio = { base64Data, mimeType };
       try {
         localStorage.setItem('morning_duty_pending_audio', JSON.stringify(lastRecordedAudio));
@@ -416,12 +427,11 @@ async function processAudioToPreview(blob) {
         mimeType: mimeType
       });
 
-      // ★ 全画面ポップアップを閉じる
+      // 全画面ポップアップを閉じる
       const procModal = document.getElementById('processingModal');
       if (procModal) procModal.style.display = 'none';
 
       if (result && result.success === true && result.summaryText) {
-        // 成功したら一時保存録音データをクリア
         clearPendingAudioData();
 
         populateMemberSelect(globalData && globalData.next ? globalData.next.no : null);
@@ -500,7 +510,7 @@ function checkRetryAudioData() {
   try {
     const saved = localStorage.getItem('morning_duty_pending_audio');
     if (saved) {
-      showRetryStatus('⚠️️ 前回中断された朝礼の録音データが残っています。');
+      showRetryStatus('⚠ 前回中断された朝礼の録音データが残っています。');
     }
   } catch (e) {}
 }
@@ -595,6 +605,7 @@ function populateMemberSelect(selectedNo) {
   }
 }
 
+// ★ チャット送信 ＋ 自動完了カウントアップ処理
 async function confirmAndSendChat() {
   const finalText = document.getElementById('previewTextarea').value.trim();
   if (!finalText) {
@@ -604,6 +615,9 @@ async function confirmAndSendChat() {
 
   const selectEl = document.getElementById('previewMemberSelect');
   const selectedTargetNo = selectEl ? Number(selectEl.value) : pendingTargetNo;
+
+  const member = globalData?.list?.find(m => Number(m.no) === Number(selectedTargetNo));
+  const memberName = member ? member.name : "担当者";
 
   const sendBtn = document.getElementById('sendChatBtn');
   sendBtn.disabled = true;
@@ -624,8 +638,12 @@ async function confirmAndSendChat() {
   if (result && result.success === true) {
     clearDraft();
 
-    showRecordStatus(`✅ 朝礼要約を Google Chat に投稿しました！`, 'success');
-    setTimeout(hideRecordStatus, 5000);
+    // 重複状況に応じたメッセージ表示
+    if (result.alreadyCompleted) {
+      showRecordStatus(`✅ Google Chatに送信しました（※${memberName}さんは本日完了済みのため回数維持）`, 'success');
+    } else {
+      showUndoBar(`✅ 送信完了！ ${memberName} さんの朝礼完了を記録しました`, { action: 'undo', undoType: 'complete', targetNo: selectedTargetNo });
+    }
   } else {
     showRecordStatus('❌ 送信に失敗しました。', 'error');
     setTimeout(hideRecordStatus, 5000);
@@ -940,12 +958,25 @@ function hideUndoBar() {
   bar.style.display = "none";
 }
 
+// ★ 手動「完了」ボタン押下時の重複チェック
 async function submitDuty(no, name) {
+  const member = globalData?.list?.find(m => Number(m.no) === Number(no));
+  const todayIso = getTodayIsoDateString();
+
+  if (member && member.history && member.history.includes(todayIso)) {
+    alert(`【確認】\n${name} さんは本日すでに完了が記録されています。`);
+    return;
+  }
+
   if (!confirm(`${name} さんの朝礼完了を記録しますか？\n`)) return;
   
   const res = await sendPost({ action: 'complete', targetNo: no });
   if (res && res.success) {
-    showUndoBar(`${name} さんの完了を記録しました`, { action: 'undo', undoType: 'complete', targetNo: no });
+    if (res.alreadyCompleted) {
+      alert(`${name} さんは本日すでに完了が記録されています。`);
+    } else {
+      showUndoBar(`${name} さんの完了を記録しました`, { action: 'undo', undoType: 'complete', targetNo: no });
+    }
   }
 }
 

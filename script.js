@@ -2,6 +2,7 @@ const GAS_URL = "https://pro46l4wrvsvgoa7f5mkqwjgnm0fpgwr.lambda-url.ap-northeas
 let globalData = null;
 let pendingUndoPayload = null;
 let retryCount = 0;
+let undoTimer = null; // ★ 自動非表示タイマー用
 let currentMemoTargetNo = null;
 let editingMemoId = null;
 
@@ -942,6 +943,11 @@ function closeSettingsModal() {
 }
 
 function showUndoBar(text, payload) {
+  // すでにタイマーが動いていたらリセット（連続操作時の誤消去防止）
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+  }
+
   pendingUndoPayload = payload;
   const bar = document.getElementById('undoBar');
   bar.className = "undo-bar";
@@ -950,9 +956,18 @@ function showUndoBar(text, payload) {
     <span>${text}</span>
     <button class="btn btn-undo" onclick="executeUndo()">元に戻す ↩</button>
   `;
+
+  // ★ 10秒（10000ミリ秒）後に自動で非表示にする
+  undoTimer = setTimeout(() => {
+    hideUndoBar();
+  }, 10000);
 }
 
 function hideUndoBar() {
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+    undoTimer = null;
+  }
   pendingUndoPayload = null;
   const bar = document.getElementById('undoBar');
   bar.style.display = "none";

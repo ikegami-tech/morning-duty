@@ -1106,9 +1106,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ★ 画面回転（横→縦など）時のスクロール位置ズレを自動補正
+// ★ 画面回転（横→縦）時に、回転前の元のスクロール位置を維持する
+let savedScrollY = 0;
+window.addEventListener("scroll", () => {
+  savedScrollY = window.scrollY;
+}, { passive: true });
+
 window.addEventListener("orientationchange", () => {
+  const targetY = savedScrollY;
   setTimeout(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo(0, targetY);
   }, 150);
 });

@@ -1105,3 +1105,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// ★ 画面回転（横→縦など）時のスクロール位置ズレを自動補正
+window.addEventListener("orientationchange", () => {
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+  }, 150);
+});
